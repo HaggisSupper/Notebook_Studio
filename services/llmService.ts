@@ -55,12 +55,38 @@ export const generateStudioContent = async (
   // Add multimodal context
   sources.forEach(s => {
     if ((s.type === 'image' || s.type === 'audio') && s.data && s.mimeType) {
-      parts.push({
-        inlineData: {
-          data: s.data.split(',')[1] || s.data, // Remove data: prefix if present
-          mimeType: s.mimeType
+      // Validate data URL format and MIME type
+      const dataUrlMatch = s.data.match(/^data:([^;,]+);base64,(.+)$/);
+      if (dataUrlMatch) {
+        const [, mimeType, base64Data] = dataUrlMatch;
+        
+        // Validate MIME type for images
+        if (s.type === 'image' && !['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'].includes(mimeType.toLowerCase())) {
+          console.warn(`Invalid image MIME type: ${mimeType}. Skipping.`);
+          return;
         }
-      });
+        
+        // Validate MIME type for audio
+        if (s.type === 'audio' && !mimeType.startsWith('audio/')) {
+          console.warn(`Invalid audio MIME type: ${mimeType}. Skipping.`);
+          return;
+        }
+        
+        // Basic validation of base64 format
+        if (!/^[A-Za-z0-9+/]+=*$/.test(base64Data)) {
+          console.warn(`Invalid base64 encoding. Skipping.`);
+          return;
+        }
+        
+        parts.push({
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType
+          }
+        });
+      } else {
+        console.warn('Invalid data URL format. Skipping multimedia source.');
+      }
     }
   });
 

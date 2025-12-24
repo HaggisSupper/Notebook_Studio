@@ -20,7 +20,8 @@ export const sanitizeText = (text: string): string => {
   sanitized = sanitized.replace(/javascript:/gi, '');
   
   // Remove data: protocol (can be used for XSS)
-  sanitized = sanitized.replace(/data:text\/html/gi, '');
+  // Block all data: URIs except for safe image formats
+  sanitized = sanitized.replace(/data:(?!image\/(?:png|jpeg|jpg|gif|webp);base64,)[^,]*,/gi, '');
   
   return sanitized;
 };

@@ -41,7 +41,7 @@ const TableView: React.FC<TableViewProps> = ({ data }) => {
               <tr key={i} className="hover:bg-neutral-700/20 transition-colors">
                 {row && row.map((cell, j) => (
                   <td key={j} className="px-6 py-4 text-xs font-medium text-neutral-300">
-                    {cell !== null && cell !== undefined ? cell : '-'}
+                    {cell ?? '-'}
                   </td>
                 ))}
               </tr>

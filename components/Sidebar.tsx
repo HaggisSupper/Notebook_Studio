@@ -339,22 +339,27 @@ const Sidebar: React.FC<SidebarProps> = ({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const response = await fetch(sanitizedUrl, { 
-        signal: controller.signal,
-        mode: 'cors'
-      });
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      const text = await response.text();
-      
-      if (!text || text.length === 0) {
-        throw new Error("URL returned empty content");
+      try {
+        const response = await fetch(sanitizedUrl, { 
+          signal: controller.signal,
+          mode: 'cors'
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const text = await response.text();
+        
+        if (!text || text.length === 0) {
+          throw new Error("URL returned empty content");
+        }
+        
+        // Sanitize the fetched content
+        const sanitizedContent = sanitizeText(text);
+        onAddSource({ title: sanitizeText(title), content: sanitizedContent, type: 'url' });
+      } catch (error: any) {
+        clearTimeout(timeoutId); // Clear timeout in case of error
+        throw error;
       }
-      
-      // Sanitize the fetched content
-      const sanitizedContent = sanitizeText(text);
-      onAddSource({ title: sanitizeText(title), content: sanitizedContent, type: 'url' });
     } catch (error: any) {
       console.warn("CORS/Network error fetching URL:", error);
       const errorMessage = error.name === 'AbortError' 
