@@ -281,7 +281,10 @@ const App: React.FC = () => {
 
   // --- Generators ---
   const handleGenerate = async (view: StudioView) => {
-    if (!activeNotebook || activeNotebook.sources.length === 0 || !activePage) return;
+    if (!activeNotebook || activeNotebook.sources.length === 0 || !activePage) {
+      setState(prev => ({ ...prev, error: "No sources available. Please add sources to generate content." }));
+      return;
+    }
     setState(prev => ({ ...prev, isLoading: true, activeView: view, error: undefined }));
     try {
       const result = await generateStudioContent(
@@ -292,6 +295,11 @@ const App: React.FC = () => {
         focusArea,
         state.sqlConfig.active ? state.sqlConfig.schemaContext : undefined
       );
+      
+      if (!result) {
+        throw new Error("No content generated from the API");
+      }
+      
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -304,18 +312,25 @@ const App: React.FC = () => {
         } : nb)
       }));
     } catch (err: any) {
-      console.error(err);
-      setState(prev => ({ ...prev, isLoading: false, error: err.message || "Synthesis failure. Retry." }));
+      console.error('Generation error:', err);
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false, 
+        error: err.message || "Synthesis failure. Check console for details and retry." 
+      }));
     }
   };
 
   const handleGenerateAll = async () => {
-    if (!activeNotebook || activeNotebook.sources.length === 0 || !activePage) return;
+    if (!activeNotebook || activeNotebook.sources.length === 0 || !activePage) {
+      setState(prev => ({ ...prev, error: "No sources available. Please add sources to generate content." }));
+      return;
+    }
     setState(prev => ({ ...prev, isLoading: true, error: undefined }));
     const views: Exclude<StudioView, 'chat'>[] = ['report', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'dashboard'];
     
     try {
-      const results = await Promise.all(
+      const results = await Promise.allSettled(
         views.map(view => generateStudioContent(
             activeNotebook.sources, 
             view, 
@@ -323,15 +338,25 @@ const App: React.FC = () => {
             undefined, 
             focusArea,
             state.sqlConfig.active ? state.sqlConfig.schemaContext : undefined
-        ).catch(e => null))
+        ))
       );
       
       const newContent: any = {};
-      views.forEach((v, i) => { if(results[i]) newContent[v] = results[i]; });
+      let hasErrors = false;
+      
+      results.forEach((result, i) => {
+        if (result.status === 'fulfilled' && result.value) {
+          newContent[views[i]] = result.value;
+        } else if (result.status === 'rejected') {
+          console.error(`Failed to generate ${views[i]}:`, result.reason);
+          hasErrors = true;
+        }
+      });
 
       setState(prev => ({
         ...prev,
         isLoading: false,
+        error: hasErrors ? "Some views failed to generate. Check console for details." : undefined,
         notebooks: prev.notebooks.map(nb => nb.id === prev.activeNotebookId ? {
           ...nb,
           pages: nb.pages.map(p => p.id === prev.activePageId ? {
@@ -341,7 +366,8 @@ const App: React.FC = () => {
         } : nb)
       }));
     } catch (err: any) {
-      setState(prev => ({ ...prev, isLoading: false, error: "Global synthesis failed." }));
+      console.error('Global synthesis error:', err);
+      setState(prev => ({ ...prev, isLoading: false, error: "Global synthesis failed. " + (err.message || "Unknown error.") }));
     }
   };
 
@@ -368,8 +394,15 @@ const App: React.FC = () => {
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || state.isLoading || !activePage) return;
+    
+    if (!activeNotebook || activeNotebook.sources.length === 0) {
+      setState(prev => ({ ...prev, error: "No sources available. Please add sources before chatting." }));
+      return;
+    }
 
     const userMsg: ChatMessage = { role: 'user', content: chatInput };
+    const currentInput = chatInput; // Capture input before clearing
+    
     // Optimistic update
     setState(prev => ({
        ...prev,
@@ -389,15 +422,21 @@ const App: React.FC = () => {
         activeNotebook.sources, 
         'chat', 
         state.settings, 
-        chatInput,
+        currentInput,
         undefined,
         state.sqlConfig.active ? state.sqlConfig.schemaContext : undefined
       );
+      
+      if (!response) {
+        throw new Error("Empty response from chat API");
+      }
+      
       const assistantMsg: ChatMessage = { role: 'assistant', content: response };
       
       setState(prev => ({
          ...prev,
          isLoading: false,
+         error: undefined,
          notebooks: prev.notebooks.map(n => n.id === prev.activeNotebookId ? {
             ...n,
             pages: n.pages.map(p => p.id === prev.activePageId ? {
@@ -408,7 +447,12 @@ const App: React.FC = () => {
       }));
 
     } catch (err: any) {
-      setState(prev => ({ ...prev, isLoading: false, error: "Relay failure: " + (err.message || "No signal.") }));
+      console.error('Chat error:', err);
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false, 
+        error: "Chat relay failure: " + (err.message || "No response received.") 
+      }));
     }
   };
 
@@ -418,13 +462,17 @@ const App: React.FC = () => {
   };
 
   const handleConnectSql = () => {
+      if (!sqlSchema.trim()) {
+        alert("Please provide schema context before establishing bridge.");
+        return;
+      }
       setState(prev => ({
           ...prev,
           sqlConfig: {
               active: true,
-              schemaContext: sqlSchema,
-              server: sqlServer,
-              database: sqlDb
+              schemaContext: sqlSchema.trim(),
+              server: sqlServer.trim() || 'localhost',
+              database: sqlDb.trim() || 'Database'
           }
       }));
       setIsSqlModalOpen(false);
