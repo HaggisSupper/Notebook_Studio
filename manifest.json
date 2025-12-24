@@ -1,0 +1,21 @@
+
+{
+  "short_name": "Studio",
+  "name": "NotebookLM Studio Clone",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192.png?text=S",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512.png?text=Studio",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#171717",
+  "background_color": "#171717"
+}

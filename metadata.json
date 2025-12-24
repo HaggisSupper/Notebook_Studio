@@ -1,0 +1,5 @@
+{
+  "name": "NotebookStudio",
+  "description": "A powerful research and creation studio that generates reports, infographics, and mindmaps from your sources using Gemini 3.",
+  "requestFramePermissions": []
+}
