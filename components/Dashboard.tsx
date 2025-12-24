@@ -17,6 +17,14 @@ const CHART_TYPES: ChartType[] = ['area', 'line', 'bar', 'scatter', 'pie', 'rada
 const ChartRenderer: React.FC<{ chart: DashboardChart }> = ({ chart }) => {
   const [activeType, setActiveType] = useState<ChartType>(chart.chartType);
 
+  if (!chart || !chart.data || chart.data.length === 0) {
+    return (
+      <div className="bg-neutral-800 border border-neutral-700 p-8 rounded-lg flex items-center justify-center h-[400px]">
+        <p className="text-neutral-500 font-mono text-xs">No chart data available</p>
+      </div>
+    );
+  }
+
   const renderChart = () => {
     switch (activeType) {
       case 'pie':
@@ -150,11 +158,19 @@ const ChartRenderer: React.FC<{ chart: DashboardChart }> = ({ chart }) => {
 };
 
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
+  if (!data) {
+    return (
+      <div className="text-center p-12 text-neutral-500 font-mono">
+        No dashboard data available. Generate content to view dashboard.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-neutral-700 pb-6">
         <div>
-          <h1 className="text-3xl font-black text-neutral-50 uppercase tracking-tighter">{data.title}</h1>
+          <h1 className="text-3xl font-black text-neutral-50 uppercase tracking-tighter">{data.title || 'Dashboard'}</h1>
           <p className="text-xs font-mono text-neutral-400 uppercase tracking-widest mt-1">Telemetry Dashboard v2.1</p>
         </div>
         <div className="px-3 py-1 bg-neutral-800 rounded border border-neutral-700 text-[10px] text-neutral-300 font-mono">
@@ -163,24 +179,37 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {data.metrics.map((m, i) => (
-          <div key={i} className="bg-neutral-800 border border-neutral-700 p-6 rounded-lg group hover:border-neutral-600 transition-all">
-            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1">{m.label}</p>
-            <p className="text-3xl font-black text-neutral-50 group-hover:scale-105 transition-transform origin-left">{m.value}</p>
-            <p className="text-[10px] text-neutral-500 mt-2 font-mono italic">{m.detail}</p>
-          </div>
-        ))}
-      </div>
+      {data.metrics && data.metrics.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {data.metrics.map((m, i) => (
+            <div key={i} className="bg-neutral-800 border border-neutral-700 p-6 rounded-lg group hover:border-neutral-600 transition-all">
+              <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1">{m.label || 'Metric'}</p>
+              <p className="text-3xl font-black text-neutral-50 group-hover:scale-105 transition-transform origin-left">{m.value || '0'}</p>
+              <p className="text-[10px] text-neutral-500 mt-2 font-mono italic">{m.detail || ''}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Dynamic Charts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {data.charts.map((chart, i) => (
-          <div key={i} className={i === 0 && data.charts.length % 2 !== 0 ? "md:col-span-2" : ""}>
-            <ChartRenderer chart={chart} />
-          </div>
-        ))}
-      </div>
+      {data.charts && data.charts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {data.charts.map((chart, i) => {
+            if (!chart || !chart.data || chart.data.length === 0) return null;
+            return (
+              <div key={i} className={i === 0 && data.charts.length % 2 !== 0 ? "md:col-span-2" : ""}>
+                <ChartRenderer chart={chart} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+      
+      {(!data.metrics || data.metrics.length === 0) && (!data.charts || data.charts.length === 0) && (
+        <div className="text-center p-12 text-neutral-500 font-mono">
+          No metrics or charts available in this dashboard.
+        </div>
+      )}
     </div>
   );
 };
