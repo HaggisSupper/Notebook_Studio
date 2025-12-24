@@ -297,6 +297,20 @@ const App: React.FC = () => {
         activePage.complexityLevel || complexityLevel,
         activePage.styleDefinition || styleDefinition
       );
+      
+      // Log SQL transforms for table generation
+      if (view === 'table' && state.sqlConfig.active) {
+        addSqlTransform(
+          'TABLE_GENERATION',
+          'Generated flat table output from SQL schema',
+          {
+            inputFields: ['sql_schema', 'chat_context'],
+            outputFields: result?.headers || [],
+            calculation: 'Extracted and flattened data based on conversation context'
+          }
+        );
+      }
+      
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -402,6 +416,20 @@ const App: React.FC = () => {
         activePage.complexityLevel || complexityLevel,
         activePage.styleDefinition || styleDefinition
       );
+      
+      // Log SQL transforms if query involves data manipulation
+      if (state.sqlConfig.active && (chatInput.toLowerCase().includes('query') || chatInput.toLowerCase().includes('select') || chatInput.toLowerCase().includes('transform') || chatInput.toLowerCase().includes('calculate'))) {
+        addSqlTransform(
+          'QUERY_EXECUTION',
+          `User query: ${chatInput.substring(0, 50)}...`,
+          {
+            inputFields: ['user_query'],
+            outputFields: ['response'],
+            calculation: 'AI-generated response based on SQL schema context'
+          }
+        );
+      }
+      
       const assistantMsg: ChatMessage = { role: 'assistant', content: response };
       
       setState(prev => ({
@@ -433,10 +461,53 @@ const App: React.FC = () => {
               active: true,
               schemaContext: sqlSchema,
               server: sqlServer,
-              database: sqlDb
+              database: sqlDb,
+              transformLog: []
           }
       }));
       setIsSqlModalOpen(false);
+  };
+
+  const addSqlTransform = (operation: string, description: string, details?: any) => {
+    setState(prev => ({
+      ...prev,
+      sqlConfig: {
+        ...prev.sqlConfig,
+        transformLog: [
+          ...(prev.sqlConfig.transformLog || []),
+          {
+            timestamp: new Date().toISOString(),
+            operation,
+            description,
+            ...details
+          }
+        ]
+      }
+    }));
+  };
+
+  const exportSqlTransformLog = () => {
+    if (!state.sqlConfig.transformLog || state.sqlConfig.transformLog.length === 0) {
+      alert('No transform log to export!');
+      return;
+    }
+
+    const logData = {
+      server: state.sqlConfig.server,
+      database: state.sqlConfig.database,
+      exportDate: new Date().toISOString(),
+      transforms: state.sqlConfig.transformLog
+    };
+
+    const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sql-transform-log-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -694,12 +765,34 @@ const App: React.FC = () => {
                           className="w-full bg-neutral-700 border-2 border-neutral-500 rounded-xl p-4 h-40 text-[10px] font-mono text-neutral-200 resize-none outline-none transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
                         />
                     </div>
-                    <button 
-                      onClick={handleConnectSql}
-                      className="w-full bg-white hover:bg-neutral-200 text-black font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs border-2 border-transparent focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
-                    >
-                      Establish Bridge
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={handleConnectSql}
+                        className="flex-1 bg-white hover:bg-neutral-200 text-black font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs border-2 border-transparent focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                      >
+                        Establish Bridge
+                      </button>
+                      {state.sqlConfig.active && state.sqlConfig.transformLog && state.sqlConfig.transformLog.length > 0 && (
+                        <button 
+                          onClick={exportSqlTransformLog}
+                          className="px-6 bg-neutral-500 hover:bg-neutral-400 text-white font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs border-2 border-transparent hover:border-orange-500"
+                        >
+                          Export Log
+                        </button>
+                      )}
+                    </div>
+                    {state.sqlConfig.active && state.sqlConfig.transformLog && state.sqlConfig.transformLog.length > 0 && (
+                      <div className="mt-4 p-4 bg-neutral-700 rounded-xl border border-neutral-500">
+                        <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Transform Log ({state.sqlConfig.transformLog.length} operations)</label>
+                        <div className="max-h-32 overflow-y-auto text-[9px] font-mono text-neutral-300 space-y-1">
+                          {state.sqlConfig.transformLog.slice(-5).map((log, idx) => (
+                            <div key={idx} className="text-neutral-400">
+                              {new Date(log.timestamp).toLocaleTimeString()}: {log.operation} - {log.description}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                 </div>
              </div>
           </div>

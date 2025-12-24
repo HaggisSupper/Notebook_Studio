@@ -72,7 +72,8 @@ export const generateStudioContent = async (
     mindmap: `${focusPrefix}${complexityPrefix}${stylePrefix}Organize core concepts into a hierarchical structure.`,
     flashcards: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate 8 study cards (question/answer).`,
     slides: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate a 6-slide presentation deck layout.`,
-    table: `${focusPrefix}${complexityPrefix}${stylePrefix}Extract key structured data into a markdown-compatible table format represented in JSON. If raw CSV data is present, format it cleanly.`,
+    table: `${focusPrefix}${complexityPrefix}${stylePrefix}Extract key structured data into a markdown-compatible table format represented in JSON. If raw CSV data is present, format it cleanly. 
+    ${sqlContext ? 'IMPORTANT: For SQL contexts, generate a flat table output that represents the result of a conversation-driven query. Include JOIN operations if multiple tables are relevant, and document any aggregations or calculations performed.' : ''}`,
     dashboard: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate a data-centric dashboard layout. 
     - Identify key trends and distributions in the data.
     - Create 3-4 distinct charts (mix of 'area', 'line', 'bar', 'pie', 'scatter').
@@ -87,7 +88,8 @@ export const generateStudioContent = async (
     ? `\n\nSYSTEM INSTRUCTION: You are a multimodal data analyst and SQL expert. 
        - If the user asks about the structured data (CSV/JSON), perform implied JOINs if multiple datasets share keys. Calculate aggregations (Sum, Avg, Count) as requested.
        - If the user references the SQL Database, write a T-SQL compatible query based on the SCHEMA_CONTEXT provided to answer the question, or explain how the data would be retrieved.
-       - Do not simply say "the data is there", actually perform the "mental" analysis on the provided text representation of the data.`
+       - Do not simply say "the data is there", actually perform the "mental" analysis on the provided text representation of the data.
+       - When performing data transformations, explain: 1) What fields were used, 2) What operations were performed, 3) What new fields were calculated.`
     : "";
 
   parts.push({ text: `TASK: ${prompts[type]}${chatInstruction}` });
