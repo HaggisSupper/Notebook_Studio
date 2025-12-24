@@ -4,6 +4,7 @@ import { Source, Notebook, Page, LLMSettings } from '../types';
 // @ts-ignore
 import JSZip from 'jszip';
 import { performDeepResearch } from '../services/llmService';
+import { sanitizeText, sanitizeFilename, sanitizeUrl } from '../utils/sanitize';
 
 interface SidebarProps {
   notebooks: Notebook[];
@@ -300,7 +301,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       return;
     }
     
-    onAddSource({ title: newTitle.trim(), content: newContent.trim(), type: 'text' });
+    // Sanitize inputs
+    const sanitizedTitle = sanitizeText(newTitle.trim());
+    const sanitizedContent = sanitizeText(newContent.trim());
+    
+    onAddSource({ title: sanitizedTitle, content: sanitizedContent, type: 'text' });
     setNewTitle('');
     setNewContent('');
     setIsAdding(false);
@@ -312,10 +317,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       return;
     }
     
-    // Basic URL validation
-    try {
-      new URL(newUrl);
-    } catch (e) {
+    // Sanitize and validate URL
+    const sanitizedUrl = sanitizeUrl(newUrl.trim());
+    if (!sanitizedUrl) {
       alert("Please enter a valid URL (including http:// or https://)");
       return;
     }
@@ -323,19 +327,19 @@ const Sidebar: React.FC<SidebarProps> = ({
     setIsAdding(false);
     setProcessStatus('Fetching URL...');
     setIsProcessing(true);
-    let title = newUrl;
+    let title = sanitizedUrl;
     try {
-      const urlObj = new URL(newUrl);
+      const urlObj = new URL(sanitizedUrl);
       title = urlObj.hostname + (urlObj.pathname.length > 1 ? urlObj.pathname : '');
     } catch (e) {
-      // Already validated above, this shouldn't happen
+      // Should not happen as we already validated
     }
 
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const response = await fetch(newUrl, { 
+      const response = await fetch(sanitizedUrl, { 
         signal: controller.signal,
         mode: 'cors'
       });
@@ -348,15 +352,17 @@ const Sidebar: React.FC<SidebarProps> = ({
         throw new Error("URL returned empty content");
       }
       
-      onAddSource({ title: title, content: text, type: 'url' });
+      // Sanitize the fetched content
+      const sanitizedContent = sanitizeText(text);
+      onAddSource({ title: sanitizeText(title), content: sanitizedContent, type: 'url' });
     } catch (error: any) {
       console.warn("CORS/Network error fetching URL:", error);
       const errorMessage = error.name === 'AbortError' 
         ? 'Request timed out after 10 seconds'
         : error.message;
       onAddSource({ 
-        title: title, 
-        content: `[URL Reference]: ${newUrl}\n(Note: Content could not be automatically fetched: ${errorMessage}. The AI will use the URL as context.)`, 
+        title: sanitizeText(title), 
+        content: `[URL Reference]: ${sanitizedUrl}\n(Note: Content could not be automatically fetched: ${errorMessage}. The AI will use the URL as context.)`, 
         type: 'url' 
       });
     } finally {

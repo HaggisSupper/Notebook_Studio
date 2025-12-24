@@ -537,11 +537,13 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1">
-              <nav className="hidden md:flex items-center bg-neutral-900 p-0.5 rounded border border-neutral-800">
+              <nav className="hidden md:flex items-center bg-neutral-900 p-0.5 rounded border border-neutral-800" role="navigation" aria-label="View navigation">
                 {(['report', 'dashboard', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'chat'] as StudioView[]).map((view) => (
                   <button
                     key={view}
                     onClick={() => setState(prev => ({...prev, activeView: view}))}
+                    aria-label={`Switch to ${view} view`}
+                    aria-current={state.activeView === view ? 'page' : undefined}
                     className={`px-3 py-1 rounded text-[9px] font-black transition-all whitespace-nowrap uppercase tracking-widest ${state.activeView === view ? 'bg-neutral-800 text-neutral-100' : 'text-neutral-500 hover:text-neutral-300'}`}
                   >
                     {view}
@@ -553,6 +555,7 @@ const App: React.FC = () => {
                  <select 
                     value={state.activeView} 
                     onChange={(e) => setState(prev => ({...prev, activeView: e.target.value as StudioView}))}
+                    aria-label="Select view"
                     className="bg-neutral-800 text-neutral-200 text-[9px] font-black uppercase p-1 rounded border border-neutral-700"
                  >
                     {(['report', 'dashboard', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'chat'] as StudioView[]).map((view) => (
@@ -564,14 +567,24 @@ const App: React.FC = () => {
               <div className="h-4 w-[1px] bg-neutral-700 mx-2 hidden md:block" />
               <button 
                 onClick={() => setIsSqlModalOpen(true)}
+                aria-label="Connect to SQL database"
                 className={`p-1.5 rounded transition-colors text-[9px] font-black uppercase tracking-widest border border-transparent ${state.sqlConfig.active ? 'text-green-500 bg-neutral-800 border-green-900' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
                 title="Connect Data Source"
               >
                 {state.sqlConfig.active ? 'DB Active' : 'DB Connect'}
               </button>
               <div className="h-4 w-[1px] bg-neutral-700 mx-2 hidden md:block" />
-              <button onClick={handleGenerateAll} title="Synthesize All" className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors">⚡</button>
-              <button onClick={() => setIsSettingsOpen(true)} className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors">⚙</button>
+              <button 
+                onClick={handleGenerateAll} 
+                title="Synthesize All" 
+                aria-label="Generate all views"
+                className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors"
+              >⚡</button>
+              <button 
+                onClick={() => setIsSettingsOpen(true)} 
+                aria-label="Open settings"
+                className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors"
+              >⚙</button>
             </div>
           </header>
 
@@ -588,6 +601,7 @@ const App: React.FC = () => {
                     {/* Close Button (X) */}
                     <button 
                       onClick={cancelGeneration}
+                      aria-label="Cancel and close"
                       className="absolute top-4 right-4 p-2 text-neutral-500 hover:text-white transition-colors"
                       title="Cancel and close"
                     >
@@ -598,20 +612,34 @@ const App: React.FC = () => {
                     <p className="text-neutral-400 text-[10px] font-mono mb-10 leading-relaxed uppercase">Generate a comprehensive {state.activeView} from the cluster.</p>
                     
                     <div className="mb-8 text-left">
-                      <label className="block text-[8px] font-black text-neutral-500 uppercase tracking-[0.3em] mb-3">Synthesis Focus</label>
+                      <label htmlFor="synthesis-focus" className="block text-[8px] font-black text-neutral-500 uppercase tracking-[0.3em] mb-3">Synthesis Focus</label>
                       <input 
+                        id="synthesis-focus"
                         type="text"
                         value={focusArea}
                         onChange={(e) => setFocusArea(e.target.value)}
                         placeholder="Define directive..."
+                        aria-label="Synthesis focus area"
                         className="w-full bg-neutral-900 border border-neutral-700 rounded p-4 focus:ring-1 focus:ring-neutral-400 outline-none text-xs text-neutral-300 font-mono uppercase"
                       />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <button onClick={() => handleGenerate(state.activeView)} className="w-full bg-white text-black font-black py-4 rounded uppercase tracking-[0.2em] text-[10px] hover:bg-neutral-200 transition-colors">Execute Single View</button>
-                      <button onClick={handleGenerateAll} className="w-full bg-neutral-900 border border-neutral-600 text-neutral-300 font-black py-4 rounded hover:bg-neutral-700 uppercase tracking-[0.2em] text-[10px] transition-colors">Execute Full Workspace</button>
-                      <button onClick={cancelGeneration} className="w-full mt-2 text-[9px] font-black text-neutral-500 uppercase tracking-widest hover:text-neutral-300 transition-colors">Abort Procedure</button>
+                      <button 
+                        onClick={() => handleGenerate(state.activeView)} 
+                        aria-label={`Generate ${state.activeView} view`}
+                        className="w-full bg-white text-black font-black py-4 rounded uppercase tracking-[0.2em] text-[10px] hover:bg-neutral-200 transition-colors"
+                      >Execute Single View</button>
+                      <button 
+                        onClick={handleGenerateAll} 
+                        aria-label="Generate all views"
+                        className="w-full bg-neutral-900 border border-neutral-600 text-neutral-300 font-black py-4 rounded hover:bg-neutral-700 uppercase tracking-[0.2em] text-[10px] transition-colors"
+                      >Execute Full Workspace</button>
+                      <button 
+                        onClick={cancelGeneration} 
+                        aria-label="Cancel generation"
+                        className="w-full mt-2 text-[9px] font-black text-neutral-500 uppercase tracking-widest hover:text-neutral-300 transition-colors"
+                      >Abort Procedure</button>
                     </div>
                   </div>
                 </div>
@@ -636,7 +664,11 @@ const App: React.FC = () => {
                         <h2 className="text-[10px] font-black text-neutral-50 uppercase tracking-[0.3em]">Module: {state.activeView}</h2>
                      </div>
                      <div className="h-[1px] flex-1 bg-neutral-800 mx-8"></div>
-                     <button onClick={() => handleGenerate(state.activeView)} className="text-[9px] font-black text-neutral-500 hover:text-white uppercase tracking-widest px-4 py-2 border border-neutral-800 rounded hover:bg-neutral-800 transition-all">Re-Synthesize</button>
+                     <button 
+                       onClick={() => handleGenerate(state.activeView)} 
+                       aria-label={`Regenerate ${state.activeView} view`}
+                       className="text-[9px] font-black text-neutral-500 hover:text-white uppercase tracking-widest px-4 py-2 border border-neutral-800 rounded hover:bg-neutral-800 transition-all"
+                     >Re-Synthesize</button>
                   </div>
 
                   <div className="space-y-12">
@@ -677,9 +709,18 @@ const App: React.FC = () => {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="INPUT COMMAND OR QUERY..."
-                  className="flex-1 bg-neutral-800 border border-neutral-700 text-neutral-100 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest"
+                  aria-label="Chat input"
+                  disabled={state.isLoading}
+                  className="flex-1 bg-neutral-800 border border-neutral-700 text-neutral-100 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
                 />
-                <button type="submit" disabled={state.isLoading} className="bg-neutral-100 disabled:opacity-20 text-black w-14 h-14 rounded flex items-center justify-center transition-all hover:bg-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg></button>
+                <button 
+                  type="submit" 
+                  disabled={state.isLoading} 
+                  aria-label="Send message"
+                  className="bg-neutral-100 disabled:opacity-20 text-black w-14 h-14 rounded flex items-center justify-center transition-all hover:bg-white"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg>
+                </button>
               </form>
             </div>
           </div>
@@ -694,11 +735,15 @@ const App: React.FC = () => {
         )}
 
         {isSqlModalOpen && (
-          <div className="fixed inset-0 bg-neutral-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-neutral-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="sql-modal-title">
              <div className="bg-neutral-800 rounded-[2rem] w-full max-w-lg shadow-2xl border border-neutral-700 overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-8 border-b border-neutral-700 flex justify-between items-center">
-                   <h2 className="text-xl font-black text-white tracking-tight uppercase">SQL Data Bridge (Simulation)</h2>
-                   <button onClick={() => setIsSqlModalOpen(false)} className="text-neutral-500 hover:text-white transition-colors">
+                   <h2 id="sql-modal-title" className="text-xl font-black text-white tracking-tight uppercase">SQL Data Bridge (Simulation)</h2>
+                   <button 
+                     onClick={() => setIsSqlModalOpen(false)} 
+                     aria-label="Close modal"
+                     className="text-neutral-500 hover:text-white transition-colors"
+                   >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                    </button>
                 </div>
@@ -708,25 +753,44 @@ const App: React.FC = () => {
                     </p>
                     <div className="grid grid-cols-2 gap-4">
                        <div>
-                          <label className="block text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Server Ref</label>
-                          <input type="text" value={sqlServer} onChange={e => setSqlServer(e.target.value)} placeholder="localhost" className="w-full bg-neutral-900 border-none rounded-xl p-3 text-xs text-white" />
+                          <label htmlFor="sql-server" className="block text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Server Ref</label>
+                          <input 
+                            id="sql-server"
+                            type="text" 
+                            value={sqlServer} 
+                            onChange={e => setSqlServer(e.target.value)} 
+                            placeholder="localhost" 
+                            aria-label="SQL server reference"
+                            className="w-full bg-neutral-900 border-none rounded-xl p-3 text-xs text-white" 
+                          />
                        </div>
                        <div>
-                          <label className="block text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Database</label>
-                          <input type="text" value={sqlDb} onChange={e => setSqlDb(e.target.value)} placeholder="AnalyticsDB" className="w-full bg-neutral-900 border-none rounded-xl p-3 text-xs text-white" />
+                          <label htmlFor="sql-database" className="block text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Database</label>
+                          <input 
+                            id="sql-database"
+                            type="text" 
+                            value={sqlDb} 
+                            onChange={e => setSqlDb(e.target.value)} 
+                            placeholder="AnalyticsDB" 
+                            aria-label="Database name"
+                            className="w-full bg-neutral-900 border-none rounded-xl p-3 text-xs text-white" 
+                          />
                        </div>
                     </div>
                     <div>
-                       <label className="block text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Schema / Data Dump Context</label>
+                       <label htmlFor="sql-schema" className="block text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Schema / Data Dump Context</label>
                        <textarea 
+                          id="sql-schema"
                           value={sqlSchema} 
                           onChange={e => setSqlSchema(e.target.value)} 
                           placeholder="PASTE TABLE SCHEMAS OR JSON DATA HERE..." 
+                          aria-label="SQL schema or data dump"
                           className="w-full bg-neutral-900 border-none rounded-xl p-4 h-40 text-[10px] font-mono text-neutral-300 resize-none outline-none focus:ring-1 focus:ring-neutral-600"
                         />
                     </div>
                     <button 
                       onClick={handleConnectSql}
+                      aria-label="Establish SQL bridge connection"
                       className="w-full bg-white hover:bg-neutral-200 text-black font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs"
                     >
                       Establish Bridge
