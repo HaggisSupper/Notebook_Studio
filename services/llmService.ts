@@ -9,7 +9,9 @@ export const generateStudioContent = async (
   settings: LLMSettings,
   chatQuery?: string,
   focus?: string,
-  sqlContext?: string
+  sqlContext?: string,
+  complexityLevel?: string,
+  styleDefinition?: string
 ): Promise<any> => {
   const parts: any[] = [];
   
@@ -61,15 +63,17 @@ export const generateStudioContent = async (
   });
 
   const focusPrefix = focus ? `FOCUS ON: ${focus}\n` : '';
+  const complexityPrefix = complexityLevel ? `COMPLEXITY LEVEL: ${complexityLevel}\n` : '';
+  const stylePrefix = styleDefinition ? `STYLE GUIDELINES: ${styleDefinition}\n` : '';
 
   const prompts = {
-    report: `${focusPrefix}Create a detailed professional report. If data sources (CSV/JSON) are present, include a 'Data Analysis' section with specific insights derived from the numbers.`,
-    infographic: `${focusPrefix}Summarize the sources into key metrics and visualizable data. Prioritize extracting numbers from provided Data/CSV/JSON sources.`,
-    mindmap: `${focusPrefix}Organize core concepts into a hierarchical structure.`,
-    flashcards: `${focusPrefix}Generate 8 study cards (question/answer).`,
-    slides: `${focusPrefix}Generate a 6-slide presentation deck layout.`,
-    table: `${focusPrefix}Extract key structured data into a markdown-compatible table format represented in JSON. If raw CSV data is present, format it cleanly.`,
-    dashboard: `${focusPrefix}Generate a data-centric dashboard layout. 
+    report: `${focusPrefix}${complexityPrefix}${stylePrefix}Create a detailed professional report. If data sources (CSV/JSON) are present, include a 'Data Analysis' section with specific insights derived from the numbers.`,
+    infographic: `${focusPrefix}${complexityPrefix}${stylePrefix}Summarize the sources into key metrics and visualizable data. Prioritize extracting numbers from provided Data/CSV/JSON sources.`,
+    mindmap: `${focusPrefix}${complexityPrefix}${stylePrefix}Organize core concepts into a hierarchical structure.`,
+    flashcards: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate 8 study cards (question/answer).`,
+    slides: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate a 6-slide presentation deck layout.`,
+    table: `${focusPrefix}${complexityPrefix}${stylePrefix}Extract key structured data into a markdown-compatible table format represented in JSON. If raw CSV data is present, format it cleanly.`,
+    dashboard: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate a data-centric dashboard layout. 
     - Identify key trends and distributions in the data.
     - Create 3-4 distinct charts (mix of 'area', 'line', 'bar', 'pie', 'scatter').
     - For time-series, use 'area' or 'line'. For categorical comparisons, use 'bar' or 'pie'. For correlations, use 'scatter'.
