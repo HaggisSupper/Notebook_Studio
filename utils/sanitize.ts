@@ -1,27 +1,53 @@
 /**
  * Sanitization utilities for user input
+ * 
+ * NOTE: These are basic sanitization utilities. For production HTML sanitization,
+ * consider using a well-tested library like DOMPurify.
+ * These functions are designed to handle common cases but may not catch all XSS vectors.
  */
 
 /**
- * Sanitize text to prevent XSS attacks
- * Removes potentially dangerous HTML/script content
+ * Escape HTML to prevent XSS attacks
+ * This is the recommended approach for displaying user content
+ */
+export const escapeHtml = (text: string): string => {
+  if (!text) return '';
+  
+  const map: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;',
+  };
+  
+  return text.replace(/[&<>"'/]/g, (char) => map[char]);
+};
+
+/**
+ * Basic text sanitization - removes dangerous patterns
+ * WARNING: This is NOT comprehensive. Use escapeHtml for user content display.
+ * This function is only for pre-processing text where HTML removal is acceptable.
  */
 export const sanitizeText = (text: string): string => {
   if (!text) return '';
   
-  // Remove script tags and their content
-  let sanitized = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  let sanitized = text;
   
-  // Remove event handlers (onclick, onerror, etc.)
-  sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
-  sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+  // Remove all script tags and their content
+  sanitized = sanitized.replace(/<script[\s\S]*?<\/script[\s\S]*?>/gi, '');
   
-  // Remove javascript: protocol
-  sanitized = sanitized.replace(/javascript:/gi, '');
+  // Remove all event handlers - multi-pass to handle nested attributes
+  let prevLength;
+  do {
+    prevLength = sanitized.length;
+    sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
+    sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '');
+  } while (sanitized.length < prevLength);
   
-  // Remove data: protocol (can be used for XSS)
-  // Block all data: URIs except for safe image formats
-  sanitized = sanitized.replace(/data:(?!image\/(?:png|jpeg|jpg|gif|webp);base64,)[^,]*,/gi, '');
+  // Remove dangerous protocols
+  sanitized = sanitized.replace(/(javascript|vbscript|data):/gi, 'removed:');
   
   return sanitized;
 };
@@ -43,6 +69,7 @@ export const sanitizeFilename = (filename: string): string => {
 
 /**
  * Validate and sanitize URL
+ * Returns null if URL is invalid or uses a dangerous protocol
  */
 export const sanitizeUrl = (url: string): string | null => {
   if (!url) return null;
@@ -50,8 +77,8 @@ export const sanitizeUrl = (url: string): string | null => {
   try {
     const urlObj = new URL(url);
     
-    // Only allow http and https protocols
-    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+    // Only allow http and https protocols (not javascript:, data:, vbscript:, etc.)
+    if (!['http:', 'https:'].includes(urlObj.protocol.toLowerCase())) {
       return null;
     }
     
@@ -59,24 +86,6 @@ export const sanitizeUrl = (url: string): string | null => {
   } catch {
     return null;
   }
-};
-
-/**
- * Escape HTML entities to prevent XSS
- */
-export const escapeHtml = (text: string): string => {
-  if (!text) return '';
-  
-  const map: { [key: string]: string } = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;',
-    '/': '&#x2F;',
-  };
-  
-  return text.replace(/[&<>"'/]/g, (char) => map[char]);
 };
 
 /**
