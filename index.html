@@ -22,6 +22,17 @@
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
     <script>
+      // Fallback error handler for module loading failures
+      window.addEventListener('error', (event) => {
+        if (event.message?.includes('Failed to fetch') || event.filename?.includes('index.tsx')) {
+          const root = document.getElementById('root');
+          if (root && !root.innerHTML) {
+            root.innerHTML = '<div style="padding: 2rem; text-align: center; font-family: system-ui;"><h1>Loading Error</h1><p>Failed to load application. Please refresh the page or check your connection.</p></div>';
+          }
+        }
+      }, true);
+    </script>
+    <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then(registration => {
