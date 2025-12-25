@@ -12,6 +12,90 @@ import SettingsModal from './components/SettingsModal';
 import Canvas from './components/Canvas';
 import { generateStudioContent } from './services/llmService';
 
+// Reusable styled button component with consistent interaction handlers
+interface StyledButtonProps {
+  onClick: () => void;
+  children: React.ReactNode;
+  'aria-label'?: string;
+  title?: string;
+  className?: string;
+  isActive?: boolean;
+  activeColor?: string;
+}
+
+const StyledButton: React.FC<StyledButtonProps> = ({ 
+  onClick, 
+  children, 
+  'aria-label': ariaLabel,
+  title,
+  className = '',
+  isActive = false,
+  activeColor = '#4ADE80'
+}) => {
+  const getBaseStyle = () => {
+    if (isActive) {
+      return {
+        backgroundColor: '#2D2D30',
+        color: activeColor,
+        border: `2px solid ${activeColor}`,
+        boxShadow: `0 0 12px ${activeColor}40`
+      };
+    }
+    return {
+      backgroundColor: 'transparent',
+      color: '#CCCCCC',
+      border: '2px solid transparent'
+    };
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isActive) {
+      e.currentTarget.style.color = '#FFFFFF';
+      e.currentTarget.style.backgroundColor = '#2D2D30';
+      e.currentTarget.style.borderColor = '#FF6B35';
+    }
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isActive) {
+      e.currentTarget.style.color = '#CCCCCC';
+      e.currentTarget.style.backgroundColor = 'transparent';
+      e.currentTarget.style.borderColor = 'transparent';
+    }
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.outline = '2px solid #FF6B35';
+    e.currentTarget.style.outlineOffset = '2px';
+    e.currentTarget.style.boxShadow = isActive 
+      ? `0 0 12px ${activeColor}40`
+      : '0 0 12px rgba(255, 107, 53, 0.4)';
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.outline = 'none';
+    if (!isActive) {
+      e.currentTarget.style.boxShadow = 'none';
+    }
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      title={title}
+      className={`px-3 py-2 rounded text-xs font-medium transition-all duration-150 ${className}`}
+      style={getBaseStyle()}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+    >
+      {children}
+    </button>
+  );
+};
+
 const INITIAL_PAGE: Page = {
   id: 'pg-1',
   name: 'Page 1',
@@ -641,132 +725,37 @@ const App: React.FC = () => {
               </div>
 
               <div className="h-5 w-px mx-1 hidden md:block" style={{ backgroundColor: '#3E3E42' }} />
-              <button 
+              <StyledButton
                 onClick={() => setIsStyleModalOpen(true)}
                 aria-label="Set complexity and style preferences"
-                className="px-3 py-2 rounded text-xs font-medium transition-all duration-150 hidden md:block"
-                style={{ backgroundColor: 'transparent', color: '#CCCCCC', border: '2px solid transparent' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.backgroundColor = '#2D2D30';
-                  e.currentTarget.style.borderColor = '#FF6B35';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#CCCCCC';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.outline = '2px solid #FF6B35';
-                  e.currentTarget.style.outlineOffset = '2px';
-                  e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.outline = 'none';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="hidden md:block"
               >
                 Style Settings
-              </button>
-              <button 
+              </StyledButton>
+              <StyledButton
                 onClick={() => setIsSqlModalOpen(true)}
                 aria-label={state.sqlConfig.active ? 'Database active - Click to manage' : 'Connect to database'}
-                className="px-3 py-2 rounded text-xs font-medium transition-all duration-150 hidden md:block"
-                style={state.sqlConfig.active ? {
-                  backgroundColor: '#2D2D30',
-                  color: '#4ADE80',
-                  border: '2px solid #4ADE80',
-                  boxShadow: '0 0 12px rgba(74, 222, 128, 0.4)'
-                } : {
-                  backgroundColor: 'transparent',
-                  color: '#CCCCCC',
-                  border: '2px solid transparent'
-                }}
-                onMouseEnter={(e) => {
-                  if (!state.sqlConfig.active) {
-                    e.currentTarget.style.color = '#FFFFFF';
-                    e.currentTarget.style.backgroundColor = '#2D2D30';
-                    e.currentTarget.style.borderColor = '#FF6B35';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!state.sqlConfig.active) {
-                    e.currentTarget.style.color = '#CCCCCC';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.borderColor = 'transparent';
-                  }
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.outline = '2px solid #FF6B35';
-                  e.currentTarget.style.outlineOffset = '2px';
-                  e.currentTarget.style.boxShadow = state.sqlConfig.active ? '0 0 12px rgba(74, 222, 128, 0.4)' : '0 0 12px rgba(255, 107, 53, 0.4)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.outline = 'none';
-                  if (!state.sqlConfig.active) {
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
-                }}
+                className="hidden md:block"
+                isActive={state.sqlConfig.active}
+                activeColor="#4ADE80"
               >
                 {state.sqlConfig.active ? 'Database Active' : 'Connect Database'}
-              </button>
+              </StyledButton>
               <div className="h-5 w-px mx-1 hidden md:block" style={{ backgroundColor: '#3E3E42' }} />
-              <button 
-                onClick={handleGenerateAll} 
+              <StyledButton
+                onClick={handleGenerateAll}
                 aria-label="Generate all views"
                 title="Generate all views"
-                className="px-3 py-2 rounded text-xs font-medium transition-all duration-150"
-                style={{ backgroundColor: 'transparent', color: '#CCCCCC', border: '2px solid transparent' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.backgroundColor = '#2D2D30';
-                  e.currentTarget.style.borderColor = '#FF6B35';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#CCCCCC';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.outline = '2px solid #FF6B35';
-                  e.currentTarget.style.outlineOffset = '2px';
-                  e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.outline = 'none';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
               >
                 Generate All
-              </button>
-              <button 
+              </StyledButton>
+              <StyledButton
                 onClick={() => setIsSettingsOpen(true)}
                 aria-label="Open settings"
                 title="Settings"
-                className="px-3 py-2 rounded text-xs font-medium transition-all duration-150"
-                style={{ backgroundColor: 'transparent', color: '#CCCCCC', border: '2px solid transparent' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.backgroundColor = '#2D2D30';
-                  e.currentTarget.style.borderColor = '#FF6B35';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#CCCCCC';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.outline = '2px solid #FF6B35';
-                  e.currentTarget.style.outlineOffset = '2px';
-                  e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.outline = 'none';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
               >
                 Settings
-              </button>
+              </StyledButton>
             </div>
           </header>
 
