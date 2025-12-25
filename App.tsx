@@ -774,50 +774,114 @@ const App: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-10 custom-scrollbar relative" style={{ backgroundColor: '#1E1E1E' }}>
             <div className="max-w-6xl mx-auto min-h-full pb-64 relative z-10">
               {state.activeView !== 'chat' && !activePage?.generatedContent[state.activeView] && !state.isLoading ? (
-                <div className="h-[70vh] flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
-                  <div className="p-16 bg-neutral-600 rounded-lg border border-neutral-500 max-w-lg shadow-[0_0_50px_-12px_rgba(255,255,255,0.05)] relative group">
-                    {/* Close Button (X) */}
+                <div className="h-[70vh] flex flex-col items-center justify-center text-center">
+                  <div className="p-12 rounded-lg max-w-lg relative" style={{ backgroundColor: '#252526', border: '1px solid #3E3E42', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                    {/* Close Button */}
                     <button 
                       onClick={cancelGeneration}
-                      className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white transition-all border-2 border-transparent hover:border-orange-500 rounded"
-                      title="Cancel and close"
+                      aria-label="Cancel and close"
+                      className="absolute top-4 right-4 p-2 rounded transition-all duration-150"
+                      style={{ color: '#999999', border: '2px solid transparent' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#FFFFFF';
+                        e.currentTarget.style.borderColor = '#FF6B35';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '#999999';
+                        e.currentTarget.style.borderColor = 'transparent';
+                      }}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
 
-                    <h2 className="text-xl font-black text-neutral-100 mb-2 tracking-widest uppercase">Terminal Idle</h2>
-                    <p className="text-neutral-400 text-[10px] font-mono mb-10 leading-relaxed uppercase">Generate a comprehensive {state.activeView} from the cluster.</p>
+                    <h2 className="text-2xl font-bold mb-2" style={{ color: '#FFFFFF' }}>Ready to Generate</h2>
+                    <p className="text-sm mb-8" style={{ color: '#999999' }}>Create a comprehensive {state.activeView} from your sources.</p>
                     
                     <div className="mb-8 text-left">
-                      <label className="block text-[8px] font-black text-neutral-400 uppercase tracking-[0.3em] mb-3">Synthesis Focus</label>
+                      <label className="block text-xs font-semibold mb-2" style={{ color: '#999999' }}>Focus Area (Optional)</label>
                       <input 
                         type="text"
                         value={focusArea}
                         onChange={(e) => setFocusArea(e.target.value)}
-                        placeholder="Define directive..."
-                        className="w-full bg-neutral-700 border-2 border-neutral-500 rounded p-4 focus:ring-0 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)] outline-none text-xs text-neutral-300 font-mono uppercase transition-all hover:border-orange-500"
+                        placeholder="e.g., Focus on key trends and insights..."
+                        aria-label="Focus area for generation"
+                        className="w-full rounded p-3 outline-none transition-all duration-150"
+                        style={{ backgroundColor: '#2D2D30', color: '#CCCCCC', border: '2px solid #3E3E42', fontSize: '0.875rem' }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = '#FF6B35';
+                          e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = '#3E3E42';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       />
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      <button onClick={() => handleGenerate(state.activeView)} className="w-full bg-white text-black font-black py-4 rounded uppercase tracking-[0.2em] text-[10px] hover:bg-neutral-200 transition-all border-2 border-transparent focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]">Execute Single View</button>
-                      <button onClick={handleGenerateAll} className="w-full bg-neutral-700 border-2 border-neutral-500 text-neutral-300 font-black py-4 rounded hover:bg-neutral-500 uppercase tracking-[0.2em] text-[10px] transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]">Execute Full Workspace</button>
-                      <button onClick={cancelGeneration} className="w-full mt-2 text-[9px] font-black text-neutral-400 uppercase tracking-widest hover:text-neutral-200 transition-all border-2 border-transparent hover:border-orange-500 rounded p-2">Abort Procedure</button>
+                    <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={() => handleGenerate(state.activeView)}
+                        aria-label={`Generate ${state.activeView}`}
+                        className="w-full py-3 rounded font-semibold transition-all duration-150"
+                        style={{ backgroundColor: '#FF6B35', color: '#FFFFFF', fontSize: '0.875rem' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#FF8556';
+                          e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#FF6B35';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        Generate {state.activeView.charAt(0).toUpperCase() + state.activeView.slice(1)}
+                      </button>
+                      <button 
+                        onClick={handleGenerateAll}
+                        aria-label="Generate all views"
+                        className="w-full py-3 rounded font-medium transition-all duration-150"
+                        style={{ backgroundColor: 'transparent', color: '#CCCCCC', fontSize: '0.875rem', border: '2px solid #3E3E42' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#2D2D30';
+                          e.currentTarget.style.borderColor = '#FF6B35';
+                          e.currentTarget.style.color = '#FFFFFF';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.borderColor = '#3E3E42';
+                          e.currentTarget.style.color = '#CCCCCC';
+                        }}
+                      >
+                        Generate All Views
+                      </button>
+                      <button 
+                        onClick={cancelGeneration}
+                        aria-label="Cancel"
+                        className="w-full mt-1 py-2 text-xs font-medium transition-all duration-150"
+                        style={{ color: '#999999' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#FFFFFF';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#999999';
+                        }}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 </div>
               ) : state.isLoading ? (
                 <div className="h-[70vh] flex flex-col items-center justify-center space-y-4">
-                  <div className="w-12 h-0.5 bg-neutral-500 overflow-hidden">
-                    <div className="w-full h-full bg-white animate-[loading_1.5s_infinite]" />
+                  <div className="w-16 h-1 overflow-hidden rounded-full" style={{ backgroundColor: '#3E3E42' }}>
+                    <div className="w-full h-full animate-[loading_1.5s_infinite]" style={{ backgroundColor: '#FF6B35' }} />
                   </div>
-                  <p className="text-neutral-400 font-mono text-[9px] tracking-[0.4em] uppercase">Synthesizing Signal Data...</p>
+                  <p className="text-sm font-medium" style={{ color: '#999999' }}>Generating content...</p>
                 </div>
               ) : state.activeView === 'chat' ? (
-                <div className="h-[70vh] flex flex-col items-center justify-center text-center opacity-40">
-                  <div className="w-24 h-[1px] bg-neutral-500 mb-8" />
-                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.5em]">Command Interface Active</p>
-                  <p className="text-[9px] font-mono text-neutral-500 mt-4 max-w-xs uppercase">Cluster is ready for natural language interrogation.</p>
+                <div className="h-[70vh] flex flex-col items-center justify-center text-center">
+                  <div className="w-16 h-px mb-8" style={{ backgroundColor: '#3E3E42' }} />
+                  <p className="text-base font-semibold mb-2" style={{ color: '#CCCCCC' }}>Chat Interface Ready</p>
+                  <p className="text-sm max-w-md" style={{ color: '#999999' }}>Ask questions about your sources or request specific analysis using the chat input below.</p>
                 </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-1000">
