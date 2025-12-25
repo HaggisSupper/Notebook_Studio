@@ -1,0 +1,5 @@
+Context:
+- Baseline: Windows 11 Pro, PowerShell, optional WSL.
+- Prefer isolated installs (pipx/uv, virtualenv, per-project Node managers, etc.) over global installs.
+- Targets often include: Win11 desktop, Electron/Tauri desktop, PWA-capable web apps.
+- Provide concrete commands and config snippets, not vague descriptions.
