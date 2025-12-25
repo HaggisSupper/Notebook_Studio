@@ -4,6 +4,7 @@ import { Source, Notebook, Page, LLMSettings } from '../types';
 // @ts-ignore
 import JSZip from 'jszip';
 import { performDeepResearch } from '../services/llmService';
+import { sanitizeText, sanitizeFilename, sanitizeUrl } from '../utils/sanitize';
 
 interface SidebarProps {
   notebooks: Notebook[];
@@ -174,6 +175,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   const handleImportZip = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      alert("Please select a valid .zip file");
+      if(zipInputRef.current) zipInputRef.current.value = '';
+      return;
+    }
 
     setProcessStatus('Extracting...');
     setIsProcessing(true);
@@ -184,18 +191,34 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       const metaFile = zip.file(rootPath + "metadata.json");
       if (!metaFile) throw new Error("Invalid Archive: metadata.json missing");
-      const meta = JSON.parse(await metaFile.async("string"));
+      
+      const metaText = await metaFile.async("string");
+      if (!metaText || !metaText.trim()) {
+        throw new Error("metadata.json is empty");
+      }
+      
+      const meta = JSON.parse(metaText);
+      if (!meta.name) {
+        throw new Error("Invalid metadata: name field is required");
+      }
 
       const sources: Source[] = [];
       const manifestFile = zip.file(rootPath + "Sources/manifest.json");
       if (manifestFile) {
-        const manifest = JSON.parse(await manifestFile.async("string"));
+        const manifestText = await manifestFile.async("string");
+        const manifest = manifestText ? JSON.parse(manifestText) : [];
+        
         for (const item of manifest) {
+          if (!item.filename) {
+            console.warn("Skipping source with missing filename:", item);
+            continue;
+          }
+          
           const fileData = zip.file(rootPath + "Sources/" + item.filename);
           if (fileData) {
             if (item.isBinary) {
               const base64 = await fileData.async("base64");
-              sources.push({ ...item, data: `data:${item.mimeType};base64,${base64}` });
+              sources.push({ ...item, data: `data:${item.mimeType || 'application/octet-stream'};base64,${base64}` });
             } else {
               const text = await fileData.async("string");
               sources.push({ ...item, content: text });
@@ -219,21 +242,29 @@ const Sidebar: React.FC<SidebarProps> = ({
         for (const pagePath of pageEntries) {
             const transcriptFile = zip.file(rootPath + "Pages/" + pagePath + "LLM Transcription.json");
             if(transcriptFile) {
-                const transcript = JSON.parse(await transcriptFile.async("string"));
+                const transcriptText = await transcriptFile.async("string");
+                const transcript = transcriptText ? JSON.parse(transcriptText) : {};
                 const generatedContent: any = {};
                 const artifactsFolder = zip.folder(rootPath + "Pages/" + pagePath + "Artifacts");
                 if(artifactsFolder) {
                     const artifactFiles = artifactsFolder.filter((path, file) => !file.dir && path.endsWith('.json'));
                     for(const artifact of artifactFiles) {
-                        const fileName = artifact.name.split('/').pop()?.replace('.json', '') as string;
-                        const content = JSON.parse(await artifact.async("string"));
-                        generatedContent[fileName] = content;
+                        try {
+                          const fileName = artifact.name.split('/').pop()?.replace('.json', '') as string;
+                          const contentText = await artifact.async("string");
+                          const content = contentText ? JSON.parse(contentText) : null;
+                          if (content) {
+                            generatedContent[fileName] = content;
+                          }
+                        } catch (artifactError) {
+                          console.warn("Failed to parse artifact:", artifact.name, artifactError);
+                        }
                     }
                 }
                 pages.push({
                     id: transcript.id || Math.random().toString(36).substr(2, 9),
-                    name: transcript.name,
-                    chatHistory: transcript.chatHistory || [],
+                    name: transcript.name || 'Untitled Page',
+                    chatHistory: Array.isArray(transcript.chatHistory) ? transcript.chatHistory : [],
                     generatedContent: generatedContent
                 });
             }
@@ -248,71 +279,130 @@ const Sidebar: React.FC<SidebarProps> = ({
       };
 
       onImportNotebook(newNotebook);
-    } catch (err) {
+      alert(`Successfully imported notebook: ${newNotebook.name}`);
+    } catch (err: any) {
       console.error("Import Failed", err);
-      alert("Failed to import notebook. Invalid structure.");
+      alert(`Failed to import notebook: ${err.message || 'Invalid archive structure'}`);
+    } finally {
+      setIsProcessing(false);
+      setProcessStatus('');
+      if(zipInputRef.current) zipInputRef.current.value = '';
     }
-    setIsProcessing(false);
-    setProcessStatus('');
-    if(zipInputRef.current) zipInputRef.current.value = '';
   };
 
   // --- Source Handlers ---
   const handleAddText = () => {
-    if (newTitle && newContent) {
-      onAddSource({ title: newTitle, content: newContent, type: 'text' });
-      setNewTitle('');
-      setNewContent('');
-      setIsAdding(false);
+    if (!newTitle || !newTitle.trim()) {
+      alert("Please enter a title for the text source");
+      return;
     }
+    if (!newContent || !newContent.trim()) {
+      alert("Please enter content for the text source");
+      return;
+    }
+    
+    // Sanitize inputs
+    const sanitizedTitle = sanitizeText(newTitle.trim());
+    const sanitizedContent = sanitizeText(newContent.trim());
+    
+    onAddSource({ title: sanitizedTitle, content: sanitizedContent, type: 'text' });
+    setNewTitle('');
+    setNewContent('');
+    setIsAdding(false);
   };
 
   const handleAddUrl = async () => {
-    if (!newUrl) return;
+    if (!newUrl || !newUrl.trim()) {
+      alert("Please enter a URL");
+      return;
+    }
+    
+    // Sanitize and validate URL
+    const sanitizedUrl = sanitizeUrl(newUrl.trim());
+    if (!sanitizedUrl) {
+      alert("Please enter a valid URL (including http:// or https://)");
+      return;
+    }
+    
     setIsAdding(false);
     setProcessStatus('Fetching URL...');
     setIsProcessing(true);
-    let title = newUrl;
+    let title = sanitizedUrl;
     try {
-      const urlObj = new URL(newUrl);
+      const urlObj = new URL(sanitizedUrl);
       title = urlObj.hostname + (urlObj.pathname.length > 1 ? urlObj.pathname : '');
-    } catch (e) {}
+    } catch (e) {
+      // Should not happen as we already validated
+    }
 
     try {
-      const response = await fetch(newUrl);
-      if (!response.ok) throw new Error('Network response was not ok');
-      const text = await response.text();
-      onAddSource({ title: title, content: text, type: 'url' });
-    } catch (error) {
-      console.warn("CORS/Network error fetching URL, storing as reference:", error);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const response = await fetch(sanitizedUrl, { 
+          signal: controller.signal,
+          mode: 'cors'
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const text = await response.text();
+        
+        if (!text || text.length === 0) {
+          throw new Error("URL returned empty content");
+        }
+        
+        // Sanitize the fetched content
+        const sanitizedContent = sanitizeText(text);
+        onAddSource({ title: sanitizeText(title), content: sanitizedContent, type: 'url' });
+      } catch (error: any) {
+        clearTimeout(timeoutId); // Clear timeout in case of error
+        throw error;
+      }
+    } catch (error: any) {
+      console.warn("CORS/Network error fetching URL:", error);
+      const errorMessage = error.name === 'AbortError' 
+        ? 'Request timed out after 10 seconds'
+        : error.message;
       onAddSource({ 
-        title: title, 
-        content: `[URL Reference]: ${newUrl}\n(Note: Content could not be automatically fetched due to browser security policies. The AI will use the URL as context.)`, 
+        title: sanitizeText(title), 
+        content: `[URL Reference]: ${sanitizedUrl}\n(Note: Content could not be automatically fetched: ${errorMessage}. The AI will use the URL as context.)`, 
         type: 'url' 
       });
+    } finally {
+      setNewUrl('');
+      setIsProcessing(false);
+      setProcessStatus('');
     }
-    setNewUrl('');
-    setIsProcessing(false);
-    setProcessStatus('');
   };
 
   const handleDeepResearch = async () => {
-    if (!researchQuery) return;
+    if (!researchQuery || !researchQuery.trim()) {
+      alert("Please enter a research query");
+      return;
+    }
+    
     setIsAdding(false);
     setProcessStatus('Deep Researching...');
     setIsProcessing(true);
 
     try {
-      const result = await performDeepResearch(researchQuery, settings);
+      const result = await performDeepResearch(researchQuery.trim(), settings);
+      
+      if (!result || !result.content) {
+        throw new Error("Research returned empty results");
+      }
+      
       onAddSource({ title: result.title, content: result.content, type: 'text' });
     } catch (error: any) {
       console.error("Deep Research Failed", error);
-      alert("Deep Research Failed: " + error.message);
+      alert(`Deep Research Failed: ${error.message || 'Unknown error occurred'}`);
+    } finally {
+      setResearchQuery('');
+      setIsProcessing(false);
+      setProcessStatus('');
     }
-    
-    setResearchQuery('');
-    setIsProcessing(false);
-    setProcessStatus('');
   };
 
   const extractTextFromPPTX = async (arrayBuffer: ArrayBuffer): Promise<string> => {
@@ -340,6 +430,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Validate file size (max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`File too large. Maximum size is 10MB. Selected file: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     setIsProcessing(true);
     setProcessStatus(`Ingesting ${file.name.split('.').pop()}...`);
@@ -351,8 +449,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     const isPPT = file.name.endsWith('.pptx') || file.type.includes('presentation');
 
     if (isPPT) {
-       const arrayBuffer = await file.arrayBuffer();
        try {
+         const arrayBuffer = await file.arrayBuffer();
          const text = await extractTextFromPPTX(arrayBuffer);
          onAddSource({
            title: file.name,
@@ -360,34 +458,60 @@ const Sidebar: React.FC<SidebarProps> = ({
            mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
            type: 'ppt'
          });
-       } catch (err) {
+         setIsAdding(false);
+       } catch (err: any) {
          console.error("PPT Parse Error", err);
-         alert("Failed to parse PPTX file.");
+         alert(`Failed to parse PPTX file: ${err.message || 'Unknown error'}`);
+       } finally {
+         setIsProcessing(false);
+         setProcessStatus('');
+         if (fileInputRef.current) fileInputRef.current.value = '';
        }
-       setIsProcessing(false);
-       setProcessStatus('');
-       setIsAdding(false);
        return;
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (isImage || isAudio) {
-        onAddSource({ title: file.name, data: result, mimeType: file.type, type: isImage ? 'image' : 'audio' });
-      } else {
-        let finalType: 'data' | 'code' | 'text' = 'text';
-        if (isData) finalType = 'data';
-        if (isCode) finalType = 'code';
-        onAddSource({ title: file.name, content: result, mimeType: file.type || 'text/plain', type: finalType });
-      }
+    
+    reader.onerror = () => {
+      console.error("FileReader error:", reader.error);
+      alert(`Failed to read file: ${reader.error?.message || 'Unknown error'}`);
       setIsProcessing(false);
       setProcessStatus('');
-      setIsAdding(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    
+    reader.onload = (event) => {
+      try {
+        const result = event.target?.result as string;
+        
+        if (!result) {
+          throw new Error("Failed to read file content");
+        }
+        
+        if (isImage || isAudio) {
+          onAddSource({ title: file.name, data: result, mimeType: file.type, type: isImage ? 'image' : 'audio' });
+        } else {
+          let finalType: 'data' | 'code' | 'text' = 'text';
+          if (isData) finalType = 'data';
+          if (isCode) finalType = 'code';
+          onAddSource({ title: file.name, content: result, mimeType: file.type || 'text/plain', type: finalType });
+        }
+        setIsAdding(false);
+      } catch (err: any) {
+        console.error("Error processing file:", err);
+        alert(`Failed to process file: ${err.message || 'Unknown error'}`);
+      } finally {
+        setIsProcessing(false);
+        setProcessStatus('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
     };
 
-    if (isImage || isAudio) reader.readAsDataURL(file);
-    else reader.readAsText(file);
+    if (isImage || isAudio) {
+      reader.readAsDataURL(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
 
   // --- Tree Handlers ---

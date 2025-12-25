@@ -19,11 +19,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose
   const [localSettings, setLocalSettings] = React.useState(initialSettings);
 
   return (
-    <div className="fixed inset-0 bg-neutral-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-neutral-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
       <div className="bg-white dark:bg-neutral-800 rounded-[2.5rem] w-full max-w-md shadow-2xl border border-neutral-100 dark:border-neutral-700 overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-8 border-b border-neutral-100 dark:border-neutral-700 flex justify-between items-center">
-          <h2 className="text-2xl font-black dark:text-white tracking-tight uppercase">Settings</h2>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-50 transition-colors">
+          <h2 id="settings-modal-title" className="text-2xl font-black dark:text-white tracking-tight uppercase">Settings</h2>
+          <button 
+            onClick={onClose} 
+            aria-label="Close settings"
+            className="text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-50 transition-colors"
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>

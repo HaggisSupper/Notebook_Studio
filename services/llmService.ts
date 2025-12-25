@@ -13,6 +13,10 @@ export const generateStudioContent = async (
   complexityLevel?: string,
   styleDefinition?: string
 ): Promise<any> => {
+  if (!sources || sources.length === 0) {
+    throw new Error("No sources provided for content generation");
+  }
+  
   const parts: any[] = [];
   
   // Add text and URL context
@@ -53,12 +57,38 @@ export const generateStudioContent = async (
   // Add multimodal context
   sources.forEach(s => {
     if ((s.type === 'image' || s.type === 'audio') && s.data && s.mimeType) {
-      parts.push({
-        inlineData: {
-          data: s.data.split(',')[1] || s.data, // Remove data: prefix if present
-          mimeType: s.mimeType
+      // Validate data URL format and MIME type
+      const dataUrlMatch = s.data.match(/^data:([^;,]+);base64,(.+)$/);
+      if (dataUrlMatch) {
+        const [, mimeType, base64Data] = dataUrlMatch;
+        
+        // Validate MIME type for images
+        if (s.type === 'image' && !['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'].includes(mimeType.toLowerCase())) {
+          console.warn(`Invalid image MIME type: ${mimeType}. Skipping.`);
+          return;
         }
-      });
+        
+        // Validate MIME type for audio
+        if (s.type === 'audio' && !mimeType.startsWith('audio/')) {
+          console.warn(`Invalid audio MIME type: ${mimeType}. Skipping.`);
+          return;
+        }
+        
+        // Basic validation of base64 format
+        if (!/^[A-Za-z0-9+/]+=*$/.test(base64Data)) {
+          console.warn(`Invalid base64 encoding. Skipping.`);
+          return;
+        }
+        
+        parts.push({
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType
+          }
+        });
+      } else {
+        console.warn('Invalid data URL format. Skipping multimedia source.');
+      }
     }
   });
 
@@ -205,62 +235,127 @@ export const generateStudioContent = async (
   };
 
   if (settings.provider === 'google') {
+    if (!process.env.API_KEY) {
+      throw new Error("Google API key is not configured. Please set the API_KEY environment variable.");
+    }
+    
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const response = await ai.models.generateContent({
-      model: settings.model || 'gemini-3-pro-preview',
-      contents: { parts },
-      config: {
-        responseMimeType: type === 'chat' ? 'text/plain' : "application/json",
-        responseSchema: type === 'chat' ? undefined : (schemas[type] as any),
-        temperature: 0.7,
-      },
-    });
-    if (type === 'chat') return response.text;
-    return JSON.parse(response.text || '{}');
+    
+    try {
+      const response = await ai.models.generateContent({
+        model: settings.model || 'gemini-3-pro-preview',
+        contents: { parts },
+        config: {
+          responseMimeType: type === 'chat' ? 'text/plain' : "application/json",
+          responseSchema: type === 'chat' ? undefined : (schemas[type] as any),
+          temperature: 0.7,
+        },
+      });
+      
+      if (!response || !response.text) {
+        throw new Error("Empty response from Gemini API");
+      }
+      
+      if (type === 'chat') return response.text;
+      
+      try {
+        return JSON.parse(response.text);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', response.text);
+        throw new Error("Invalid JSON response from API");
+      }
+    } catch (apiError: any) {
+      console.error('Gemini API error:', apiError);
+      throw new Error(`Gemini API error: ${apiError.message || 'Unknown error'}`);
+    }
   }
 
   const baseUrl = settings.provider === 'openrouter' ? 'https://openrouter.ai/api/v1' : settings.baseUrl;
   const apiKey = settings.provider === 'openrouter' ? settings.apiKey : (settings.apiKey || 'none');
   
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': window.location.origin,
-      'X-Title': 'NotebookLM Studio'
-    },
-    body: JSON.stringify({
-      model: settings.model,
-      messages: [
-        { role: 'system', content: `You are a professional multimodal analyst.` },
-        { 
-          role: 'user', 
-          content: [
-            { type: 'text', text: prompts[type] + chatInstruction + (type !== 'chat' ? " Respond ONLY with a JSON object matching the requested schema." : "") },
-            ...sources.map(s => {
-              if (['text', 'data', 'code', 'url'].includes(s.type)) return { type: 'text', text: `SOURCE (${s.type.toUpperCase()}): ${s.title}\n${s.content}` };
-              if (s.type === 'image') return { type: 'image_url', image_url: { url: s.data } };
-              return null;
-            }).filter(Boolean)
-          ]
-        }
-      ],
-      response_format: type === 'chat' ? undefined : { type: 'json_object' }
-    })
-  });
+  if (!baseUrl) {
+    throw new Error(`Base URL is required for ${settings.provider} provider`);
+  }
+  
+  if (settings.provider === 'openrouter' && !apiKey) {
+    throw new Error("OpenRouter API key is required");
+  }
+  
+  try {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'NotebookLM Studio'
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages: [
+          { role: 'system', content: `You are a professional multimodal analyst.` },
+          { 
+            role: 'user', 
+            content: [
+              { type: 'text', text: prompts[type] + chatInstruction + (type !== 'chat' ? " Respond ONLY with a JSON object matching the requested schema." : "") },
+              ...sources.map(s => {
+                if (['text', 'data', 'code', 'url'].includes(s.type)) return { type: 'text', text: `SOURCE (${s.type.toUpperCase()}): ${s.title}\n${s.content}` };
+                if (s.type === 'image' && s.data) return { type: 'image_url', image_url: { url: s.data } };
+                return null;
+              }).filter(Boolean)
+            ]
+          }
+        ],
+        response_format: type === 'chat' ? undefined : { type: 'json_object' }
+      })
+    });
 
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'LLM API Error');
-  const content = data.choices[0].message.content;
-  if (type === 'chat') return content;
-  return JSON.parse(content);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error.message || 'LLM API Error');
+    }
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response structure from API');
+    }
+    
+    const content = data.choices[0].message.content;
+    
+    if (!content) {
+      throw new Error('Empty content in API response');
+    }
+    
+    if (type === 'chat') return content;
+    
+    try {
+      return JSON.parse(content);
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', content);
+      throw new Error("Invalid JSON response from API");
+    }
+  } catch (fetchError: any) {
+    console.error('LLM Service error:', fetchError);
+    if (fetchError.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to LLM service. Check your connection and API endpoint.');
+    }
+    throw fetchError;
+  }
 };
 
 export const performDeepResearch = async (
   query: string,
   settings: LLMSettings
 ): Promise<{ title: string; content: string }> => {
+  if (!query || !query.trim()) {
+    throw new Error("Research query cannot be empty");
+  }
+  
   const MAX_LOOPS = 5;
   const tools = TOOL_DEFINITIONS;
   
@@ -294,56 +389,65 @@ export const performDeepResearch = async (
     // --- 1. Provider Adapter ---
 
     if (settings.provider === 'google') {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const modelName = settings.model.includes('gemini') ? settings.model : 'gemini-3-pro-preview';
+      if (!process.env.API_KEY) {
+        throw new Error("Google API key is not configured for deep research");
+      }
       
-      // Gemini Adapter: Convert standard message history into a clear transcript for context
-      // This is often more robust for 'Agentic' loops than trying to perfectly map JSON objects to Content history
-      // which can be fragile with mismatched IDs or null contents.
-      let transcript = "";
-      messages.forEach(m => {
-        if (m.role === 'system') transcript += `System Instruction: ${m.content}\n\n`;
-        else if (m.role === 'user') transcript += `User: ${m.content}\n\n`;
-        else if (m.role === 'assistant') {
-          if (m.tool_calls) {
-             m.tool_calls.forEach((tc: any) => {
-                transcript += `Assistant (Thinking): I will call ${tc.function.name} with ${tc.function.arguments}\n`;
-             });
-          } else if (m.content) {
-             transcript += `Assistant: ${m.content}\n\n`;
-          }
-        }
-        else if (m.role === 'tool') {
-           transcript += `Tool Output (${m.name}): ${m.content}\n\n`;
-        }
-      });
-      
-      transcript += `\n\nAssistant (You):`;
-
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: { parts: [{ text: transcript }] },
-        config: {
-          tools: getGeminiTools(),
-          temperature: 0.2 // Lower temp for precise tool use
-        }
-      });
-      
-      const candidate = response.candidates?.[0];
-      const part = candidate?.content?.parts?.[0];
-      
-      if (part?.functionCall) {
-         toolCalls = [{
-            id: 'call_' + Math.random().toString(36).substr(2, 9),
-            function: {
-               name: part.functionCall.name,
-               arguments: JSON.stringify(part.functionCall.args)
+      try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const modelName = settings.model.includes('gemini') ? settings.model : 'gemini-3-pro-preview';
+        
+        // Gemini Adapter: Convert standard message history into a clear transcript for context
+        // This is often more robust for 'Agentic' loops than trying to perfectly map JSON objects to Content history
+        // which can be fragile with mismatched IDs or null contents.
+        let transcript = "";
+        messages.forEach(m => {
+          if (m.role === 'system') transcript += `System Instruction: ${m.content}\n\n`;
+          else if (m.role === 'user') transcript += `User: ${m.content}\n\n`;
+          else if (m.role === 'assistant') {
+            if (m.tool_calls) {
+               m.tool_calls.forEach((tc: any) => {
+                  transcript += `Assistant (Thinking): I will call ${tc.function.name} with ${tc.function.arguments}\n`;
+               });
+            } else if (m.content) {
+               transcript += `Assistant: ${m.content}\n\n`;
             }
-         }];
-         // We construct a synthetic message to keep the canonical history consistent
-         responseMessage = { role: 'assistant', content: null, tool_calls: toolCalls };
-      } else {
-         responseMessage = { role: 'assistant', content: part?.text || "No response" };
+          }
+          else if (m.role === 'tool') {
+             transcript += `Tool Output (${m.name}): ${m.content}\n\n`;
+          }
+        });
+        
+        transcript += `\n\nAssistant (You):`;
+
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: { parts: [{ text: transcript }] },
+          config: {
+            tools: getGeminiTools(),
+            temperature: 0.2 // Lower temp for precise tool use
+          }
+        });
+        
+        const candidate = response.candidates?.[0];
+        const part = candidate?.content?.parts?.[0];
+        
+        if (part?.functionCall) {
+           toolCalls = [{
+              id: 'call_' + Math.random().toString(36).substr(2, 9),
+              function: {
+                 name: part.functionCall.name,
+                 arguments: JSON.stringify(part.functionCall.args)
+              }
+           }];
+           // We construct a synthetic message to keep the canonical history consistent
+           responseMessage = { role: 'assistant', content: null, tool_calls: toolCalls };
+        } else {
+           responseMessage = { role: 'assistant', content: part?.text || "No response" };
+        }
+      } catch (geminiError: any) {
+        console.error('Gemini error in research loop:', geminiError);
+        throw new Error(`Deep research failed: ${geminiError.message || 'Gemini API error'}`);
       }
 
     } else {
@@ -351,27 +455,45 @@ export const performDeepResearch = async (
       const baseUrl = settings.provider === 'openrouter' ? 'https://openrouter.ai/api/v1' : settings.baseUrl;
       const apiKey = settings.provider === 'openrouter' ? settings.apiKey : (settings.apiKey || 'none');
       
-      const response = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'NotebookLM Studio'
-        },
-        body: JSON.stringify({
-          model: settings.model,
-          messages: messages,
-          tools: tools,
-          tool_choice: "auto"
-        })
-      });
+      if (!baseUrl) {
+        throw new Error(`Base URL is required for ${settings.provider} provider`);
+      }
       
-      const data = await response.json();
-      if(data.error) throw new Error(data.error.message);
-      
-      responseMessage = data.choices[0].message;
-      toolCalls = responseMessage.tool_calls || [];
+      try {
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'NotebookLM Studio'
+          },
+          body: JSON.stringify({
+            model: settings.model,
+            messages: messages,
+            tools: tools,
+            tool_choice: "auto"
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API request failed: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        if(data.error) throw new Error(data.error.message || 'API error');
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+          throw new Error('Invalid response structure from API');
+        }
+        
+        responseMessage = data.choices[0].message;
+        toolCalls = responseMessage.tool_calls || [];
+      } catch (fetchError: any) {
+        console.error('Research API error:', fetchError);
+        throw new Error(`Deep research failed: ${fetchError.message || 'API connection error'}`);
+      }
     }
 
     // --- 2. Update History ---
@@ -386,9 +508,16 @@ export const performDeepResearch = async (
           functionArgs = JSON.parse(toolCall.function.arguments);
         } catch(e) {
           console.warn("Failed to parse tool args", toolCall.function.arguments);
+          functionArgs = {}; // Use empty object as fallback
         }
         
-        const result = await executeTool(functionName, functionArgs, settings);
+        let result: string;
+        try {
+          result = await executeTool(functionName, functionArgs, settings);
+        } catch (toolError: any) {
+          console.error(`Tool execution error for ${functionName}:`, toolError);
+          result = `Error executing tool: ${toolError.message || 'Unknown error'}`;
+        }
         
         messages.push({
           role: "tool",
@@ -400,9 +529,10 @@ export const performDeepResearch = async (
       // Loop continues naturally to let LLM analyze tool output
     } else {
       // No tools called -> Final Answer
+      const finalContent = responseMessage.content || "Research completed.";
       return {
         title: `Research: ${query}`,
-        content: responseMessage.content || "Research completed."
+        content: finalContent
       };
     }
   }

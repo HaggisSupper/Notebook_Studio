@@ -284,7 +284,10 @@ const App: React.FC = () => {
 
   // --- Generators ---
   const handleGenerate = async (view: StudioView) => {
-    if (!activeNotebook || activeNotebook.sources.length === 0 || !activePage) return;
+    if (!activeNotebook || activeNotebook.sources.length === 0 || !activePage) {
+      setState(prev => ({ ...prev, error: "No sources available. Please add sources to generate content." }));
+      return;
+    }
     setState(prev => ({ ...prev, isLoading: true, activeView: view, error: undefined }));
     try {
       const result = await generateStudioContent(
@@ -323,18 +326,25 @@ const App: React.FC = () => {
         } : nb)
       }));
     } catch (err: any) {
-      console.error(err);
-      setState(prev => ({ ...prev, isLoading: false, error: err.message || "Synthesis failure. Retry." }));
+      console.error('Generation error:', err);
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false, 
+        error: err.message || "Synthesis failure. Check console for details and retry." 
+      }));
     }
   };
 
   const handleGenerateAll = async () => {
-    if (!activeNotebook || activeNotebook.sources.length === 0 || !activePage) return;
+    if (!activeNotebook || activeNotebook.sources.length === 0 || !activePage) {
+      setState(prev => ({ ...prev, error: "No sources available. Please add sources to generate content." }));
+      return;
+    }
     setState(prev => ({ ...prev, isLoading: true, error: undefined }));
     const views: Exclude<StudioView, 'chat' | 'canvas'>[] = ['report', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'dashboard'];
     
     try {
-      const results = await Promise.all(
+      const results = await Promise.allSettled(
         views.map(view => generateStudioContent(
             activeNotebook.sources, 
             view, 
@@ -348,11 +358,21 @@ const App: React.FC = () => {
       );
       
       const newContent: any = {};
-      views.forEach((v, i) => { if(results[i]) newContent[v] = results[i]; });
+      let hasErrors = false;
+      
+      results.forEach((result, i) => {
+        if (result.status === 'fulfilled' && result.value) {
+          newContent[views[i]] = result.value;
+        } else if (result.status === 'rejected') {
+          console.error(`Failed to generate ${views[i]}:`, result.reason);
+          hasErrors = true;
+        }
+      });
 
       setState(prev => ({
         ...prev,
         isLoading: false,
+        error: hasErrors ? "Some views failed to generate. Check console for details." : undefined,
         notebooks: prev.notebooks.map(nb => nb.id === prev.activeNotebookId ? {
           ...nb,
           pages: nb.pages.map(p => p.id === prev.activePageId ? {
@@ -362,7 +382,8 @@ const App: React.FC = () => {
         } : nb)
       }));
     } catch (err: any) {
-      setState(prev => ({ ...prev, isLoading: false, error: "Global synthesis failed." }));
+      console.error('Global synthesis error:', err);
+      setState(prev => ({ ...prev, isLoading: false, error: "Global synthesis failed. " + (err.message || "Unknown error.") }));
     }
   };
 
@@ -389,8 +410,15 @@ const App: React.FC = () => {
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || state.isLoading || !activePage) return;
+    
+    if (!activeNotebook || activeNotebook.sources.length === 0) {
+      setState(prev => ({ ...prev, error: "No sources available. Please add sources before chatting." }));
+      return;
+    }
 
     const userMsg: ChatMessage = { role: 'user', content: chatInput };
+    const currentInput = chatInput; // Capture input before clearing
+    
     // Optimistic update
     setState(prev => ({
        ...prev,
@@ -410,7 +438,7 @@ const App: React.FC = () => {
         activeNotebook.sources, 
         'chat', 
         state.settings, 
-        chatInput,
+        currentInput,
         undefined,
         state.sqlConfig.active ? state.sqlConfig.schemaContext : undefined,
         activePage.complexityLevel || complexityLevel,
@@ -435,6 +463,7 @@ const App: React.FC = () => {
       setState(prev => ({
          ...prev,
          isLoading: false,
+         error: undefined,
          notebooks: prev.notebooks.map(n => n.id === prev.activeNotebookId ? {
             ...n,
             pages: n.pages.map(p => p.id === prev.activePageId ? {
@@ -445,7 +474,12 @@ const App: React.FC = () => {
       }));
 
     } catch (err: any) {
-      setState(prev => ({ ...prev, isLoading: false, error: "Relay failure: " + (err.message || "No signal.") }));
+      console.error('Chat error:', err);
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false, 
+        error: "Chat relay failure: " + (err.message || "No response received.") 
+      }));
     }
   };
 
@@ -455,6 +489,10 @@ const App: React.FC = () => {
   };
 
   const handleConnectSql = () => {
+      if (!sqlSchema.trim()) {
+        alert("Please provide schema context before establishing bridge.");
+        return;
+      }
       setState(prev => ({
           ...prev,
           sqlConfig: {
@@ -639,6 +677,7 @@ const App: React.FC = () => {
                     <div className="mb-8 text-left">
                       <label className="block text-[8px] font-black text-neutral-400 uppercase tracking-[0.3em] mb-3">Synthesis Focus</label>
                       <input 
+                        id="synthesis-focus"
                         type="text"
                         value={focusArea}
                         onChange={(e) => setFocusArea(e.target.value)}
@@ -717,7 +756,7 @@ const App: React.FC = () => {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="INPUT COMMAND OR QUERY..."
-                  className="flex-1 bg-neutral-600 border-2 border-neutral-500 text-neutral-100 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                   className="flex-1 bg-neutral-600 border-2 border-neutral-500 text-neutral-100 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
                 />
                 <button type="submit" disabled={state.isLoading} className="bg-neutral-100 disabled:opacity-20 text-black w-14 h-14 rounded flex items-center justify-center transition-all hover:bg-white border-2 border-transparent hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg></button>
               </form>
@@ -759,6 +798,7 @@ const App: React.FC = () => {
                     <div>
                        <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Schema / Data Dump Context</label>
                        <textarea 
+                          id="sql-schema"
                           value={sqlSchema} 
                           onChange={e => setSqlSchema(e.target.value)} 
                           placeholder="PASTE TABLE SCHEMAS OR JSON DATA HERE..." 

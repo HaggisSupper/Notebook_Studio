@@ -86,6 +86,10 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
   };
 
   const renderNode = (node: MindmapNode, depth = 0, index = 0) => {
+    if (!node || !node.id || !node.label) {
+      return null;
+    }
+    
     return (
       <div key={node.id} className="flex flex-col items-center">
         <div className={`
@@ -98,7 +102,9 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
         {node.children && node.children.length > 0 && (
           <div className="flex gap-12 relative">
             <div className="absolute top-[-24px] left-1/2 w-[3px] h-6 bg-neutral-300 dark:bg-neutral-600 transform -translate-x-1/2" />
-            {node.children.map((child, idx) => (
+            {node.children.map((child, idx) => {
+              if (!child) return null;
+              return (
               <div key={child.id} className="relative flex flex-col items-center pt-6">
                 {/* Horizontal connection line */}
                 {node.children && node.children.length > 1 && idx === 0 && (
@@ -113,12 +119,20 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
                 <div className="absolute top-0 left-1/2 w-[3px] h-6 bg-neutral-300 dark:bg-neutral-600 transform -translate-x-1/2" />
                 {renderNode(child, depth + 1, idx)}
               </div>
-            ))}
+            )})}
           </div>
         )}
       </div>
     );
   };
+
+  if (!data || !data.id || !data.label) {
+    return (
+      <div className="text-center p-12 text-neutral-500 font-mono">
+        No mindmap data available. Generate content to view mindmap.
+      </div>
+    );
+  }
 
   return (
     <div className="p-16 w-full min-h-[700px] bg-neutral-50 dark:bg-neutral-800/20 rounded-[3rem] border-2 border-dashed border-neutral-200 dark:border-neutral-700">
