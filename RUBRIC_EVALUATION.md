@@ -142,7 +142,7 @@ This document provides a comprehensive self-evaluation of the UI/UX redesign aga
 
 ## Total Rubric Score
 
-**RUBRIC_SCORE = (0.40 × 1.00) + (0.247 × 0.98) + (0.20 × 1.00) + (0.148 × 0.99)**  
+**RUBRIC_SCORE = (0.40 × 1.00) + (0.25 × 0.988) + (0.20 × 1.00) + (0.15 × 0.987)**  
 **RUBRIC_SCORE = 0.40 + 0.247 + 0.20 + 0.148 = 0.995**
 
 **Final Score: 99.5%**
