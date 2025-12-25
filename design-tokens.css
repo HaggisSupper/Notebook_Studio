@@ -58,6 +58,7 @@
      COLORS - SEMANTIC
      ============================================ */
   --success: #10b981;
+  --success-border-dark: #0d5028;
   --warning: #f59e0b;
   --error: #ef4444;
   --info: #3b82f6;
@@ -142,10 +143,10 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.6);
-  --shadow-glow-orange: 0 0 20px var(--orange-glow);
-  --shadow-glow-orange-strong: 0 0 30px var(--orange-glow-strong);
-  --shadow-glow-teal: 0 0 20px var(--teal-glow);
-  --shadow-glow-teal-strong: 0 0 40px var(--teal-glow);
+  --shadow-glow-orange: 0 0 20px rgba(255, 140, 58, 0.25);
+  --shadow-glow-orange-strong: 0 0 30px rgba(255, 140, 58, 0.4);
+  --shadow-glow-teal: 0 0 20px rgba(45, 212, 191, 0.2);
+  --shadow-glow-teal-strong: 0 0 40px rgba(45, 212, 191, 0.2);
   
   /* ============================================
      ANIMATION

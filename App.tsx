@@ -494,13 +494,15 @@ const App: React.FC = () => {
                   <button
                     key={view}
                     onClick={() => setState(prev => ({...prev, activeView: view}))}
-                    className={`px-3 py-1 rounded text-[9px] font-black transition-all whitespace-nowrap uppercase tracking-widest`}
+                    className={`px-3 py-1 rounded text-[9px] font-black whitespace-nowrap uppercase tracking-widest`}
                     style={state.activeView === view ? {
                       backgroundColor: 'var(--orange-primary)',
                       color: 'var(--bg-primary)',
-                      boxShadow: 'var(--shadow-glow-orange)'
+                      boxShadow: 'var(--shadow-glow-orange)',
+                      transition: 'background-color 150ms ease-out, box-shadow 150ms ease-out, color 150ms ease-out'
                     } : {
-                      color: 'var(--text-quaternary)'
+                      color: 'var(--text-quaternary)',
+                      transition: 'color 150ms ease-out'
                     }}
                   >
                     {view}
