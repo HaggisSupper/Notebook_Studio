@@ -53,7 +53,7 @@ This design system prioritizes **clarity over novelty** and **predictability ove
 ### Font Stack
 ```css
 font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, 
-             'Source Sans Pro', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+             'Source Sans 3', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 ```
 
 ### Type Scale (Base: 16px / 1rem)
