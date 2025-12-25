@@ -1153,8 +1153,17 @@ const App: React.FC = () => {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
           background: #454545; 
         }
-        /* Smooth transitions for all interactive elements */
-        * {
+        /* Smooth transitions for interactive elements */
+        button,
+        a,
+        input,
+        textarea,
+        select,
+        [role="button"],
+        [type="button"],
+        [type="submit"],
+        [type="reset"] {
+          transition-property: color, background-color, border-color, box-shadow;
           transition-duration: 150ms;
           transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         }
