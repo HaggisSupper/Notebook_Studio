@@ -649,7 +649,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); onDeleteNotebook(nb.id); }} className="text-neutral-500 hover:text-red-500" title="Delete">
-                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
+                               <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
                             </button>
                          </div>
                       </div>
@@ -690,10 +690,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                      )}
                                   </div>
                                   <button onClick={(e) => { e.stopPropagation(); startEditing(page.id, page.name); }} className="opacity-0 group-hover/page:opacity-100 text-neutral-600 hover:text-white p-0.5" title="Rename">
-                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                     <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                   </button>
                                   <button onClick={(e) => { e.stopPropagation(); onDeletePage(nb.id, page.id); }} className="opacity-0 group-hover/page:opacity-100 text-neutral-600 hover:text-red-500 p-0.5">
-                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
+                                     <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
                                   </button>
                                </div>
                             ))}
@@ -713,7 +713,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                  className="w-full flex items-center justify-between p-4 text-xs font-black text-neutral-100 uppercase tracking-widest hover:bg-neutral-800 transition-colors"
                >
                  <span>Context Signals</span>
-                 <svg className={`w-3 h-3 transition-transform ${openSections.sources ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                 <svg className={`w-3 h-3 shrink-0 transition-transform ${openSections.sources ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                </button>
                
                {/* Source Controls (Add, Undo, Redo) */}
