@@ -98,7 +98,7 @@ git checkout --theirs <file>
 
 # 6. After resolving all conflicts:
 git add .
-git commit -m "Merge copilot/code-review-and-bug-hunting with conflicts resolved"
+git commit -m "Merge copilot/code-review-and-bug-hunting with conflicts resolved."
 
 # 7. Push to main
 git push origin main

@@ -85,9 +85,13 @@ try_merge() {
   
   if is_dry_run "$@"; then
     print_color "$YELLOW" "[DRY RUN] Would attempt merge of: $branch"
-    # Test merge without committing
-    git merge --no-commit --no-ff "$branch" 2>&1 | head -20
+    # Test merge without committing - capture full output
+    local merge_output=$(git merge --no-commit --no-ff "$branch" 2>&1)
     local result=$?
+    echo "$merge_output" | head -20
+    if [[ $(echo "$merge_output" | wc -l) -gt 20 ]]; then
+      print_color "$YELLOW" "... (output truncated, $(echo "$merge_output" | wc -l) total lines)"
+    fi
     git merge --abort 2>/dev/null
     return $result
   else
@@ -99,7 +103,7 @@ try_merge() {
       # Check if it's a conflict
       if git status | grep -q "Unmerged paths"; then
         print_color "$YELLOW" "⚠ Merge conflicts detected in $branch"
-        git status --short | grep "^UU\\|^AA\\|^DD" || true
+        git status --short | grep "^UU\|^AA\|^DD" || true
         
         print_color "$YELLOW" "Conflict details:"
         git diff --name-only --diff-filter=U | head -10
