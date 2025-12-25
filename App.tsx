@@ -432,7 +432,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen w-full overflow-hidden ${state.isDarkMode ? 'dark' : ''}`}>
-      <div className="flex w-full h-full bg-neutral-900 transition-colors selection:bg-neutral-800 selection:text-white">
+      <div className="flex w-full h-full transition-colors selection:bg-neutral-800 selection:text-white" style={{ backgroundColor: 'var(--bg-primary)' }}>
         
         {/* Sidebar */}
         <div className="flex-shrink-0 z-50">
@@ -474,7 +474,7 @@ const App: React.FC = () => {
         <main className="flex-1 flex flex-col min-w-0 h-full relative">
           
           {/* Top Navigation Bar */}
-          <header className="h-12 border-b border-neutral-800 flex items-center justify-between px-4 bg-neutral-900 sticky top-0 z-40">
+          <header className="h-12 border-b flex items-center justify-between px-4 sticky top-0 z-40" style={{ borderColor: 'var(--border-secondary)', backgroundColor: 'var(--bg-secondary)' }}>
             <div className="flex items-center gap-3">
               {/* Spacer if sidebar unpinned and open to prevent overlap if necessary, though absolute positioning handles most */}
               {!isSidebarPinned && <div className="w-8"></div>}
@@ -489,12 +489,19 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1">
-              <nav className="hidden md:flex items-center bg-neutral-900 p-0.5 rounded border border-neutral-800">
+              <nav className="hidden md:flex items-center p-0.5 rounded border" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-secondary)' }}>
                 {(['report', 'dashboard', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'chat'] as StudioView[]).map((view) => (
                   <button
                     key={view}
                     onClick={() => setState(prev => ({...prev, activeView: view}))}
-                    className={`px-3 py-1 rounded text-[9px] font-black transition-all whitespace-nowrap uppercase tracking-widest ${state.activeView === view ? 'bg-neutral-800 text-neutral-100' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    className={`px-3 py-1 rounded text-[9px] font-black transition-all whitespace-nowrap uppercase tracking-widest`}
+                    style={state.activeView === view ? {
+                      backgroundColor: 'var(--orange-primary)',
+                      color: 'var(--bg-primary)',
+                      boxShadow: 'var(--shadow-glow-orange)'
+                    } : {
+                      color: 'var(--text-quaternary)'
+                    }}
                   >
                     {view}
                   </button>
@@ -516,14 +523,35 @@ const App: React.FC = () => {
               <div className="h-4 w-[1px] bg-neutral-700 mx-2 hidden md:block" />
               <button 
                 onClick={() => setIsSqlModalOpen(true)}
-                className={`p-1.5 rounded transition-colors text-[9px] font-black uppercase tracking-widest border border-transparent ${state.sqlConfig.active ? 'text-green-500 bg-neutral-800 border-green-900' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
-                title="Connect Data Source"
+                className={`p-1.5 rounded transition-colors text-[9px] font-black uppercase tracking-widest border border-transparent`}
+                style={state.sqlConfig.active ? {
+                  color: 'var(--success)',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  borderColor: '#0d5028'
+                } : {
+                  color: 'var(--text-tertiary)'
+                }}
+                title="Connect Data Source (SQL Bridge)"
               >
-                {state.sqlConfig.active ? 'DB Active' : 'DB Connect'}
+                {state.sqlConfig.active ? '✓ DB Active' : 'DB Connect'}
               </button>
               <div className="h-4 w-[1px] bg-neutral-700 mx-2 hidden md:block" />
-              <button onClick={handleGenerateAll} title="Synthesize All" className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors">⚡</button>
-              <button onClick={() => setIsSettingsOpen(true)} className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors">⚙</button>
+              <button 
+                onClick={handleGenerateAll} 
+                title="Synthesize All Views" 
+                className="p-1.5 text-neutral-400 hover:bg-neutral-800 rounded transition-colors"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                ⚡ Generate All
+              </button>
+              <button 
+                onClick={() => setIsSettingsOpen(true)} 
+                className="p-1.5 text-neutral-400 hover:bg-neutral-800 rounded transition-colors"
+                style={{ color: 'var(--text-tertiary)' }}
+                title="Settings"
+              >
+                ⚙ Settings
+              </button>
             </div>
           </header>
 
@@ -561,9 +589,25 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <button onClick={() => handleGenerate(state.activeView)} className="w-full bg-white text-black font-black py-4 rounded uppercase tracking-[0.2em] text-[10px] hover:bg-neutral-200 transition-colors">Execute Single View</button>
-                      <button onClick={handleGenerateAll} className="w-full bg-neutral-900 border border-neutral-600 text-neutral-300 font-black py-4 rounded hover:bg-neutral-700 uppercase tracking-[0.2em] text-[10px] transition-colors">Execute Full Workspace</button>
-                      <button onClick={cancelGeneration} className="w-full mt-2 text-[9px] font-black text-neutral-500 uppercase tracking-widest hover:text-neutral-300 transition-colors">Abort Procedure</button>
+                      <button 
+                        onClick={() => handleGenerate(state.activeView)} 
+                        className="w-full py-4 rounded uppercase tracking-[0.2em] text-[10px] font-black transition-all btn-primary-orange"
+                      >
+                        Execute Single View
+                      </button>
+                      <button 
+                        onClick={handleGenerateAll} 
+                        className="w-full border py-4 rounded uppercase tracking-[0.2em] text-[10px] font-black transition-all btn-secondary-orange"
+                      >
+                        Execute Full Workspace
+                      </button>
+                      <button 
+                        onClick={cancelGeneration} 
+                        className="w-full mt-2 text-[9px] font-black uppercase tracking-widest transition-colors"
+                        style={{ color: 'var(--text-quaternary)' }}
+                      >
+                        Abort Procedure
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -611,7 +655,12 @@ const App: React.FC = () => {
 
           {/* Floating Chat */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-8 pointer-events-none z-30">
-            <div className="pointer-events-auto bg-neutral-900/95 backdrop-blur-md rounded border border-neutral-800 shadow-2xl flex flex-col max-h-[450px]">
+            <div className="pointer-events-auto rounded border flex flex-col max-h-[450px] chat-container-teal" style={{
+              backgroundColor: 'var(--teal-subtle)',
+              borderColor: 'var(--teal-border)',
+              backdropFilter: 'blur(16px)',
+              boxShadow: 'var(--shadow-glow-teal)'
+            }}>
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                 {activePage?.chatHistory.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -623,15 +672,34 @@ const App: React.FC = () => {
                 <div ref={chatEndRef} />
               </div>
               
-              <form onSubmit={handleChat} className="p-4 border-t border-neutral-800 flex gap-4 bg-neutral-900">
+              <form onSubmit={handleChat} className="p-4 border-t flex gap-4" style={{ 
+                borderColor: 'var(--teal-border)', 
+                backgroundColor: 'var(--bg-secondary)' 
+              }}>
                 <input 
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="INPUT COMMAND OR QUERY..."
-                  className="flex-1 bg-neutral-800 border border-neutral-700 text-neutral-100 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest"
+                  className="flex-1 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest input-teal"
+                  style={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    border: '2px solid var(--teal-border-strong)'
+                  }}
                 />
-                <button type="submit" disabled={state.isLoading} className="bg-neutral-100 disabled:opacity-20 text-black w-14 h-14 rounded flex items-center justify-center transition-all hover:bg-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg></button>
+                <button 
+                  type="submit" 
+                  disabled={state.isLoading} 
+                  className="w-14 h-14 rounded flex items-center justify-center transition-all disabled:opacity-20"
+                  style={{
+                    backgroundColor: 'var(--teal-primary)',
+                    color: 'var(--bg-primary)'
+                  }}
+                  title="Send Message"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg>
+                </button>
               </form>
             </div>
           </div>
@@ -679,7 +747,7 @@ const App: React.FC = () => {
                     </div>
                     <button 
                       onClick={handleConnectSql}
-                      className="w-full bg-white hover:bg-neutral-200 text-black font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs"
+                      className="w-full py-4 rounded-xl transition-all uppercase tracking-widest text-xs font-black btn-primary-orange"
                     >
                       Establish Bridge
                     </button>

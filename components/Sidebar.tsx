@@ -685,8 +685,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                           onChange={(e) => setNewContent(e.target.value)}
                         />
                         <div className="flex gap-2">
-                          <button onClick={handleAddText} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[9px] uppercase tracking-widest">Inject</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[9px] uppercase">Abort</button>
+                          <button onClick={handleAddText} className="flex-1 py-1.5 rounded font-black text-[9px] uppercase tracking-widest btn-primary-orange">Inject</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 py-1.5 rounded font-black text-[9px] uppercase btn-secondary-orange">Abort</button>
                         </div>
                       </>
                     )}
@@ -701,8 +701,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                           onChange={(e) => setNewUrl(e.target.value)}
                         />
                         <div className="flex gap-2">
-                          <button onClick={handleAddUrl} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[9px] uppercase tracking-widest">Fetch</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[9px] uppercase">Abort</button>
+                          <button onClick={handleAddUrl} className="flex-1 py-1.5 rounded font-black text-[9px] uppercase tracking-widest btn-primary-orange">Fetch</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 py-1.5 rounded font-black text-[9px] uppercase btn-secondary-orange">Abort</button>
                         </div>
                       </>
                     )}
@@ -719,14 +719,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                            />
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={handleDeepResearch} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[9px] uppercase tracking-widest">Research</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[9px] uppercase">Abort</button>
+                          <button onClick={handleDeepResearch} className="flex-1 py-1.5 rounded font-black text-[9px] uppercase tracking-widest btn-primary-orange">Research</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 py-1.5 rounded font-black text-[9px] uppercase btn-secondary-orange">Abort</button>
                         </div>
                       </>
                     )}
                     
                     {!isProcessing && addMode === 'file' && (
-                      <button onClick={() => setIsAdding(false)} className="w-full bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[9px] uppercase">Abort</button>
+                      <button onClick={() => setIsAdding(false)} className="w-full py-1.5 rounded font-black text-[9px] uppercase btn-secondary-orange">Abort</button>
                     )}
                   </div>
                 )}
