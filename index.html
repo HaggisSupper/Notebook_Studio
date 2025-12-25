@@ -24,7 +24,7 @@
     <script>
       // Fallback error handler for module loading failures
       window.addEventListener('error', (event) => {
-        const message = (event.error && event.error.message) || event.message;
+        const message = event.error?.message || event.message;
         const filename = ('filename' in event) ? event.filename : undefined;
         if (message?.includes('Failed to fetch') || filename?.includes('index.tsx')) {
           const root = document.getElementById('root');
