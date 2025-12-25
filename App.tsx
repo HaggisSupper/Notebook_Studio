@@ -16,14 +16,14 @@ const INITIAL_PAGE: Page = {
   id: 'pg-1',
   name: 'Page 1',
   generatedContent: {},
-  chatHistory: [{ role: 'assistant', content: 'Antigravity systems online. Ready for multimodal analysis.' }]
+  chatHistory: [{ role: 'assistant', content: 'Welcome to Notebook Studio. Ready to analyze your sources and generate insights.' }]
 };
 
 const INITIAL_NOTEBOOK: Notebook = {
   id: 'nb-1',
-  name: 'Initial Protocol',
+  name: 'Initial Notebook',
   sources: [
-    { id: '1', title: 'Studio Protocol', content: 'NotebookLM Studio Clone. Grayscale visual studio antigravity aesthetics. Supports: Multimodal Reports, Infographics, Mindmaps, Flashcards, Slides, Tables, and Telemetry Dashboards. Powered by Google Gemini.', type: 'text' }
+    { id: '1', title: 'Getting Started', content: 'Notebook Studio - A multimodal analysis tool for Gen-X professionals. Create Reports, Infographics, Mindmaps, Flashcards, Slides, Tables, and Dashboards. Optimized for clarity, readability, and efficiency.', type: 'text' }
   ],
   pages: [INITIAL_PAGE]
 };
@@ -511,8 +511,8 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`flex h-screen w-full overflow-hidden ${state.isDarkMode ? 'dark' : ''}`}>
-      <div className="flex w-full h-full bg-neutral-700 transition-colors selection:bg-neutral-600 selection:text-white">
+    <div className={`flex h-screen w-full overflow-hidden ${state.isDarkMode ? 'dark' : ''}`} style={{ backgroundColor: '#1E1E1E' }}>
+      <div className="flex w-full h-full transition-colors" style={{ backgroundColor: '#1E1E1E', color: '#CCCCCC' }}>
         
         {/* Sidebar */}
         <div className="flex-shrink-0 z-50">
@@ -554,72 +554,224 @@ const App: React.FC = () => {
         <main className="flex-1 flex flex-col min-w-0 h-full relative">
           
           {/* Top Navigation Bar */}
-          <header className="h-12 border-b border-neutral-600 flex items-center justify-between px-4 bg-neutral-700 sticky top-0 z-40">
-            <div className="flex items-center gap-3">
-              {/* Spacer if sidebar unpinned and open to prevent overlap if necessary, though absolute positioning handles most */}
+          <header className="h-14 flex items-center justify-between px-6 sticky top-0 z-40 transition-all duration-150" style={{ backgroundColor: '#252526', borderBottom: '1px solid #3E3E42' }}>
+            <div className="flex items-center gap-4">
               {!isSidebarPinned && <div className="w-8"></div>}
               
-              <div className="w-5 h-5 bg-neutral-100 rounded flex items-center justify-center text-black font-black text-[10px]">A</div>
-              <div className="flex flex-col">
-                 <h1 className="text-[10px] font-black text-neutral-400 tracking-widest uppercase leading-none mb-0.5">{activeNotebook?.name || 'Studio Core'}</h1>
-                 <span className="text-[8px] font-mono text-neutral-600 uppercase">{activePage?.name}</span>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 flex items-center justify-center rounded" style={{ backgroundColor: '#FF6B35' }}>
+                  <span className="text-white font-bold text-sm">NS</span>
+                </div>
+                <div className="flex flex-col">
+                   <h1 className="text-sm font-semibold leading-tight" style={{ color: '#FFFFFF' }}>{activeNotebook?.name || 'Notebook Studio'}</h1>
+                   <span className="text-xs" style={{ color: '#999999' }}>{activePage?.name}</span>
+                </div>
               </div>
-              <div className="h-4 w-[1px] bg-neutral-500 mx-1" />
-              <div className="text-[10px] text-neutral-400 font-mono italic">CLUSTER: {activeNotebook?.sources.length || 0} SIGNALS</div>
+              <div className="h-5 w-px mx-2" style={{ backgroundColor: '#3E3E42' }} />
+              <div className="text-xs font-medium" style={{ color: '#999999' }}>{activeNotebook?.sources.length || 0} Source{activeNotebook?.sources.length !== 1 ? 's' : ''}</div>
             </div>
 
-            <div className="flex items-center gap-1">
-              <nav className="hidden md:flex items-center bg-neutral-700 p-0.5 rounded border border-neutral-600">
+            <div className="flex items-center gap-2">
+              <nav className="hidden md:flex items-center gap-1 p-1 rounded" style={{ backgroundColor: '#1E1E1E', border: '1px solid #3E3E42' }}>
                 {(['report', 'dashboard', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'canvas', 'chat'] as StudioView[]).map((view) => (
                   <button
                     key={view}
                     onClick={() => setState(prev => ({...prev, activeView: view}))}
-                    className={`px-3 py-1 rounded text-[9px] font-black transition-all whitespace-nowrap uppercase tracking-widest border-2 border-transparent ${state.activeView === view ? 'bg-neutral-600 text-neutral-100 border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : 'text-neutral-400 hover:text-neutral-200 hover:border-orange-500'}`}
+                    aria-label={`Switch to ${view} view`}
+                    aria-current={state.activeView === view ? 'page' : undefined}
+                    className={`px-3 py-2 rounded text-xs font-medium transition-all duration-150 whitespace-nowrap capitalize ${state.activeView === view ? 'shadow-md' : ''}`}
+                    style={state.activeView === view ? {
+                      backgroundColor: '#FF6B35',
+                      color: '#FFFFFF',
+                      boxShadow: '0 0 12px rgba(255, 107, 53, 0.4)'
+                    } : {
+                      backgroundColor: 'transparent',
+                      color: '#999999',
+                      border: '2px solid transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (state.activeView !== view) {
+                        e.currentTarget.style.color = '#FFFFFF';
+                        e.currentTarget.style.borderColor = '#FF6B35';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (state.activeView !== view) {
+                        e.currentTarget.style.color = '#999999';
+                        e.currentTarget.style.borderColor = 'transparent';
+                      }
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.outline = '2px solid #FF6B35';
+                      e.currentTarget.style.outlineOffset = '2px';
+                      e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.outline = 'none';
+                      if (state.activeView !== view) {
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
                   >
                     {view}
                   </button>
                 ))}
               </nav>
-              {/* Mobile View Selector Simplification */}
+              {/* Mobile View Selector */}
               <div className="md:hidden">
                  <select 
                     value={state.activeView} 
                     onChange={(e) => setState(prev => ({...prev, activeView: e.target.value as StudioView}))}
-                    className="bg-neutral-600 text-neutral-200 text-[9px] font-black uppercase p-1 rounded border-2 border-transparent hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)] outline-none"
+                    aria-label="Select view"
+                    className="rounded text-sm font-medium px-3 py-2 outline-none transition-all duration-150"
+                    style={{ backgroundColor: '#2D2D30', color: '#CCCCCC', border: '2px solid #3E3E42' }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#FF6B35';
+                      e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#3E3E42';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                  >
                     {(['report', 'dashboard', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'canvas', 'chat'] as StudioView[]).map((view) => (
-                       <option key={view} value={view}>{view}</option>
+                       <option key={view} value={view}>{view.charAt(0).toUpperCase() + view.slice(1)}</option>
                     ))}
                  </select>
               </div>
 
-              <div className="h-4 w-[1px] bg-neutral-500 mx-2 hidden md:block" />
+              <div className="h-5 w-px mx-1 hidden md:block" style={{ backgroundColor: '#3E3E42' }} />
               <button 
                 onClick={() => setIsStyleModalOpen(true)}
-                className="p-1.5 rounded transition-all text-[9px] font-black uppercase tracking-widest border-2 border-transparent text-neutral-300 hover:text-white hover:bg-neutral-600 hover:border-orange-500"
-                title="Set Complexity & Style"
+                aria-label="Set complexity and style preferences"
+                className="px-3 py-2 rounded text-xs font-medium transition-all duration-150 hidden md:block"
+                style={{ backgroundColor: 'transparent', color: '#CCCCCC', border: '2px solid transparent' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.backgroundColor = '#2D2D30';
+                  e.currentTarget.style.borderColor = '#FF6B35';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#CCCCCC';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = '2px solid #FF6B35';
+                  e.currentTarget.style.outlineOffset = '2px';
+                  e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = 'none';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
-                Style
+                Style Settings
               </button>
               <button 
                 onClick={() => setIsSqlModalOpen(true)}
-                className={`p-1.5 rounded transition-all text-[9px] font-black uppercase tracking-widest border-2 ${state.sqlConfig.active ? 'text-green-400 bg-neutral-600 border-green-700 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'text-neutral-300 hover:text-white hover:bg-neutral-600 border-transparent hover:border-orange-500'}`}
-                title="Connect Data Source"
+                aria-label={state.sqlConfig.active ? 'Database active - Click to manage' : 'Connect to database'}
+                className="px-3 py-2 rounded text-xs font-medium transition-all duration-150 hidden md:block"
+                style={state.sqlConfig.active ? {
+                  backgroundColor: '#2D2D30',
+                  color: '#4ADE80',
+                  border: '2px solid #4ADE80',
+                  boxShadow: '0 0 12px rgba(74, 222, 128, 0.4)'
+                } : {
+                  backgroundColor: 'transparent',
+                  color: '#CCCCCC',
+                  border: '2px solid transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (!state.sqlConfig.active) {
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.backgroundColor = '#2D2D30';
+                    e.currentTarget.style.borderColor = '#FF6B35';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!state.sqlConfig.active) {
+                    e.currentTarget.style.color = '#CCCCCC';
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = 'transparent';
+                  }
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = '2px solid #FF6B35';
+                  e.currentTarget.style.outlineOffset = '2px';
+                  e.currentTarget.style.boxShadow = state.sqlConfig.active ? '0 0 12px rgba(74, 222, 128, 0.4)' : '0 0 12px rgba(255, 107, 53, 0.4)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = 'none';
+                  if (!state.sqlConfig.active) {
+                    e.currentTarget.style.boxShadow = 'none';
+                  }
+                }}
               >
-                {state.sqlConfig.active ? 'DB Active' : 'DB Connect'}
+                {state.sqlConfig.active ? 'Database Active' : 'Connect Database'}
               </button>
-              <div className="h-4 w-[1px] bg-neutral-500 mx-2 hidden md:block" />
-              <button onClick={handleGenerateAll} title="Synthesize All" className="p-1.5 text-neutral-300 hover:text-white hover:bg-neutral-600 rounded transition-all border-2 border-transparent hover:border-orange-500">⚡</button>
-              <button onClick={() => setIsSettingsOpen(true)} className="p-1.5 text-neutral-300 hover:text-white hover:bg-neutral-600 rounded transition-all border-2 border-transparent hover:border-orange-500">⚙</button>
+              <div className="h-5 w-px mx-1 hidden md:block" style={{ backgroundColor: '#3E3E42' }} />
+              <button 
+                onClick={handleGenerateAll} 
+                aria-label="Generate all views"
+                title="Generate all views"
+                className="px-3 py-2 rounded text-xs font-medium transition-all duration-150"
+                style={{ backgroundColor: 'transparent', color: '#CCCCCC', border: '2px solid transparent' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.backgroundColor = '#2D2D30';
+                  e.currentTarget.style.borderColor = '#FF6B35';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#CCCCCC';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = '2px solid #FF6B35';
+                  e.currentTarget.style.outlineOffset = '2px';
+                  e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = 'none';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                Generate All
+              </button>
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                aria-label="Open settings"
+                title="Settings"
+                className="px-3 py-2 rounded text-xs font-medium transition-all duration-150"
+                style={{ backgroundColor: 'transparent', color: '#CCCCCC', border: '2px solid transparent' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.backgroundColor = '#2D2D30';
+                  e.currentTarget.style.borderColor = '#FF6B35';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#CCCCCC';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = '2px solid #FF6B35';
+                  e.currentTarget.style.outlineOffset = '2px';
+                  e.currentTarget.style.boxShadow = '0 0 12px rgba(255, 107, 53, 0.4)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = 'none';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                Settings
+              </button>
             </div>
           </header>
 
           {/* Canvas */}
-          <div className="flex-1 overflow-y-auto bg-neutral-700 p-10 custom-scrollbar relative">
-            <div className="absolute top-0 right-0 p-4 pointer-events-none opacity-5">
-              <span className="text-[120px] font-black select-none uppercase tracking-tighter">ANTIGRAVITY</span>
-            </div>
-
+          <div className="flex-1 overflow-y-auto p-10 custom-scrollbar relative" style={{ backgroundColor: '#1E1E1E' }}>
             <div className="max-w-6xl mx-auto min-h-full pb-64 relative z-10">
               {state.activeView !== 'chat' && !activePage?.generatedContent[state.activeView] && !state.isLoading ? (
                 <div className="h-[70vh] flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
@@ -697,13 +849,28 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Floating Chat */}
+          {/* Floating Chat - Teal Accent for Conversational UI */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-8 pointer-events-none z-30">
-            <div className="pointer-events-auto bg-neutral-700/95 backdrop-blur-md rounded border border-neutral-600 shadow-2xl flex flex-col max-h-[450px]">
+            <div className="pointer-events-auto backdrop-blur-md rounded-lg shadow-2xl flex flex-col max-h-[450px] transition-all duration-150" style={{ backgroundColor: 'rgba(37, 37, 38, 0.95)', border: '1px solid #14B8A6', boxShadow: '0 0 20px rgba(20, 184, 166, 0.2)' }}>
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                 {activePage?.chatHistory.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] px-6 py-4 rounded text-xs leading-relaxed ${msg.role === 'user' ? 'bg-neutral-100 text-black font-black uppercase' : 'bg-neutral-600 text-neutral-200 font-mono'}`}>
+                    <div 
+                      className="max-w-[75%] px-6 py-4 rounded-lg leading-relaxed transition-all duration-150"
+                      style={msg.role === 'user' ? {
+                        backgroundColor: '#2D2D30',
+                        color: '#FFFFFF',
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        border: '1px solid #3E3E42'
+                      } : {
+                        backgroundColor: '#252526',
+                        color: '#CCCCCC',
+                        fontSize: '0.875rem',
+                        border: '1px solid #14B8A6',
+                        boxShadow: '0 0 8px rgba(20, 184, 166, 0.15)'
+                      }}
+                    >
                       {msg.content}
                     </div>
                   </div>
@@ -711,15 +878,63 @@ const App: React.FC = () => {
                 <div ref={chatEndRef} />
               </div>
               
-              <form onSubmit={handleChat} className="p-4 border-t border-neutral-600 flex gap-4 bg-neutral-700">
+              <form onSubmit={handleChat} className="p-4 flex gap-4" style={{ borderTop: '1px solid #3E3E42', backgroundColor: '#252526' }}>
                 <input 
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="INPUT COMMAND OR QUERY..."
-                  className="flex-1 bg-neutral-600 border-2 border-neutral-500 text-neutral-100 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                  placeholder="Type your message..."
+                  aria-label="Chat message input"
+                  className="flex-1 rounded px-4 py-3 outline-none transition-all duration-150"
+                  style={{ 
+                    backgroundColor: '#2D2D30', 
+                    color: '#CCCCCC', 
+                    border: '2px solid #3E3E42',
+                    fontSize: '0.875rem'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#14B8A6';
+                    e.currentTarget.style.boxShadow = '0 0 12px rgba(20, 184, 166, 0.4)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#3E3E42';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
                 />
-                <button type="submit" disabled={state.isLoading} className="bg-neutral-100 disabled:opacity-20 text-black w-14 h-14 rounded flex items-center justify-center transition-all hover:bg-white border-2 border-transparent hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg></button>
+                <button 
+                  type="submit" 
+                  disabled={state.isLoading}
+                  aria-label="Send message"
+                  className="w-12 h-12 rounded flex items-center justify-center transition-all duration-150"
+                  style={{ 
+                    backgroundColor: '#14B8A6', 
+                    color: '#FFFFFF',
+                    border: '2px solid transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!state.isLoading) {
+                      e.currentTarget.style.backgroundColor = '#2DD4BF';
+                      e.currentTarget.style.boxShadow = '0 0 12px rgba(20, 184, 166, 0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#14B8A6';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.outline = '2px solid #14B8A6';
+                    e.currentTarget.style.outlineOffset = '2px';
+                    e.currentTarget.style.boxShadow = '0 0 12px rgba(20, 184, 166, 0.4)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.outline = 'none';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </button>
               </form>
             </div>
           </div>
@@ -860,11 +1075,30 @@ const App: React.FC = () => {
 
       </div>
       <style>{`
-        @keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        @keyframes loading { 
+          0% { transform: translateX(-100%); } 
+          100% { transform: translateX(100%); } 
+        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1E1E1E; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+          background: #3E3E42; 
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+          background: #454545; 
+        }
+        /* Smooth transitions for all interactive elements */
+        * {
+          transition-duration: 150ms;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Selection color */
+        ::selection {
+          background-color: #FF6B35;
+          color: #FFFFFF;
+        }
       `}</style>
     </div>
   );
