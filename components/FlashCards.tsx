@@ -18,10 +18,22 @@ const FlashCards: React.FC<FlashCardProps> = ({ data }) => {
     }
     setFlippedIndices(newFlipped);
   };
+  
+  if (!data || !data.cards || data.cards.length === 0) {
+    return (
+      <div className="text-center p-12 text-neutral-500 font-mono">
+        No flashcards available. Generate content to view flashcards.
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto p-4">
-      {data.cards.map((card, idx) => (
+      {data.cards.map((card, idx) => {
+        if (!card || !card.question || !card.answer) {
+          return null;
+        }
+        return (
         <div 
           key={idx} 
           onClick={() => toggleFlip(idx)}
@@ -40,7 +52,7 @@ const FlashCards: React.FC<FlashCardProps> = ({ data }) => {
             </div>
           </div>
         </div>
-      ))}
+      )})}
       <style>{`
         .perspective-1000 { perspective: 1000px; }
         .preserve-3d { transform-style: preserve-3d; }

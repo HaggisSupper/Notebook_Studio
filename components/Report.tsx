@@ -9,15 +9,23 @@ interface ReportProps {
 
 const Report: React.FC<ReportProps> = ({ data, onTitleChange }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(data.title);
+  const [editValue, setEditValue] = useState(data?.title || '');
   
   // Undo/Redo History Stacks
   const [past, setPast] = useState<string[]>([]);
   const [future, setFuture] = useState<string[]>([]);
 
   useEffect(() => {
-    setEditValue(data.title);
-  }, [data.title]);
+    setEditValue(data?.title || '');
+  }, [data?.title]);
+  
+  if (!data) {
+    return (
+      <div className="text-center p-12 text-neutral-500 font-mono">
+        No report data available. Generate content to view report.
+      </div>
+    );
+  }
 
   const handleSave = () => {
     setIsEditing(false);
@@ -98,21 +106,25 @@ const Report: React.FC<ReportProps> = ({ data, onTitleChange }) => {
       </header>
 
       <div className="space-y-16">
-        {data.sections.map((section, idx) => (
-          <section key={idx}>
-            <h3 className="text-3xl font-black text-neutral-900 dark:text-neutral-100 mb-6 uppercase tracking-tight">{section.heading}</h3>
-            <div className="text-neutral-600 dark:text-neutral-400 leading-loose text-lg space-y-6">
-              {section.body.split('\n\n').map((paragraph, pIdx) => (
-                <p key={pIdx}>{paragraph}</p>
-              ))}
-            </div>
-          </section>
-        ))}
+        {data.sections && data.sections.length > 0 ? (
+          data.sections.map((section, idx) => (
+            <section key={idx}>
+              <h3 className="text-3xl font-black text-neutral-900 dark:text-neutral-100 mb-6 uppercase tracking-tight">{section.heading || `Section ${idx + 1}`}</h3>
+              <div className="text-neutral-600 dark:text-neutral-400 leading-loose text-lg space-y-6">
+                {section.body && section.body.split('\n\n').map((paragraph, pIdx) => (
+                  <p key={pIdx}>{paragraph}</p>
+                ))}
+              </div>
+            </section>
+          ))
+        ) : (
+          <div className="text-center p-8 text-neutral-500">No sections available in this report.</div>
+        )}
       </div>
 
       <footer className="mt-20 pt-12 border-t border-neutral-100 dark:border-neutral-700">
         <h3 className="text-2xl font-black text-neutral-900 dark:text-neutral-100 mb-6 uppercase tracking-tight">Terminal Analysis</h3>
-        <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed text-lg">{data.conclusion}</p>
+        <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed text-lg">{data.conclusion || 'No conclusion available.'}</p>
       </footer>
     </article>
   );

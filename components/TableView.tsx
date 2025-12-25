@@ -7,10 +7,18 @@ interface TableViewProps {
 }
 
 const TableView: React.FC<TableViewProps> = ({ data }) => {
+  if (!data || !data.headers || data.headers.length === 0) {
+    return (
+      <div className="text-center p-12 text-neutral-500 font-mono">
+        No table data available. Generate content to view table.
+      </div>
+    );
+  }
+
   return (
     <div className="bg-neutral-800 border border-neutral-700 rounded-lg overflow-hidden shadow-2xl animate-in fade-in duration-500">
       <div className="p-6 border-b border-neutral-700 flex justify-between items-center">
-        <h2 className="text-sm font-black text-neutral-50 uppercase tracking-[0.2em]">{data.title}</h2>
+        <h2 className="text-sm font-black text-neutral-50 uppercase tracking-[0.2em]">{data.title || 'Data Table'}</h2>
         <div className="flex gap-2">
            <div className="w-2 h-2 rounded-full bg-neutral-600"></div>
            <div className="w-2 h-2 rounded-full bg-neutral-600"></div>
@@ -23,17 +31,17 @@ const TableView: React.FC<TableViewProps> = ({ data }) => {
             <tr className="bg-neutral-700/50">
               {data.headers.map((header, i) => (
                 <th key={i} className="px-6 py-4 text-[0.6rem] font-black text-neutral-400 uppercase tracking-widest border-b border-neutral-700">
-                  {header}
+                  {header || `Column ${i + 1}`}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-700/50">
-            {data.rows.map((row, i) => (
+            {data.rows && data.rows.map((row, i) => (
               <tr key={i} className="hover:bg-neutral-700/20 transition-colors">
-                {row.map((cell, j) => (
+                {row && row.map((cell, j) => (
                   <td key={j} className="px-6 py-4 text-xs font-medium text-neutral-300">
-                    {cell}
+                    {cell ?? '-'}
                   </td>
                 ))}
               </tr>
