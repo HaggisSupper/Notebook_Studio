@@ -1,0 +1,227 @@
+# Testing Strategy - Notebook Studio
+
+## Overview
+
+This project implements a comprehensive Test-Driven Development (TDD) approach to ensure "The Build" never breaks.
+
+## Testing Pyramid
+
+```
+         /\
+        /  \  E2E Tests (Playwright)
+       /____\
+      /      \
+     / Integration \ Unit Tests (Vitest)
+    /____________\
+```
+
+## Test Coverage Requirements
+
+- **Minimum Coverage**: 80% across all metrics
+  - Lines: 80%
+  - Functions: 80%
+  - Branches: 80%
+  - Statements: 80%
+
+- **Critical Paths**: 100% coverage required
+  - API key handling
+  - Data persistence
+  - LLM service calls
+
+## Running Tests
+
+### Local Development
+
+```bash
+# Run all unit tests in watch mode
+npm run test:watch
+
+# Run unit tests once with coverage
+npm run test:unit
+
+# Run integration tests
+npm run test:integration
+
+# Run E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
+
+# Check coverage thresholds
+npm run test:coverage:check
+```
+
+### Pre-Commit Checks
+
+Git hooks automatically run:
+1. ✅ Linting (ESLint)
+2. ✅ Type checking (TypeScript)
+3. ✅ Unit tests for changed files
+4. ✅ Format check (Prettier)
+
+### Pre-Push Checks
+
+Before pushing to remote:
+1. ✅ Full unit test suite
+2. ✅ Integration tests
+3. ✅ Coverage threshold verification
+4. ✅ Production build
+
+## CI/CD Pipeline
+
+GitHub Actions runs on every PR and push:
+
+### Test Job
+- Lint check
+- Type checking
+- Unit tests with coverage
+- Integration tests
+- Coverage report upload to Codecov
+- Production build verification
+- Bundle size analysis
+- Lighthouse CI audit
+
+### E2E Job
+- Playwright tests across browsers:
+  - Chrome, Firefox, Safari
+  - Mobile Chrome, Mobile Safari
+
+### Security Job
+- npm audit
+- Snyk vulnerability scan
+
+## Writing Tests
+
+### Unit Tests (Vitest)
+
+```typescript
+// src/services/example.test.ts
+import { describe, it, expect, vi } from 'vitest';
+
+describe('ExampleService', () => {
+  it('should do something', () => {
+    expect(true).toBe(true);
+  });
+
+  it('should handle errors', async () => {
+    await expect(asyncFunction()).rejects.toThrow();
+  });
+});
+```
+
+### E2E Tests (Playwright)
+
+```typescript
+// e2e/feature.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('should perform user workflow', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('h1')).toBeVisible();
+});
+```
+
+## Test Data
+
+- Mock data in `src/test/fixtures/`
+- Test utilities in `src/test/utils/`
+- Factories for complex objects
+
+## Debugging Tests
+
+### Vitest
+```bash
+# Run specific test file
+npm run test -- src/services/llmService.test.ts
+
+# Run with UI
+npm run test:watch
+```
+
+### Playwright
+```bash
+# Interactive UI mode
+npm run test:e2e:ui
+
+# Debug mode
+npx playwright test --debug
+
+# Generate test code
+npx playwright codegen http://localhost:3000
+```
+
+## Continuous Monitoring
+
+- **Codecov**: Track coverage trends
+- **Lighthouse CI**: Performance monitoring
+- **Bundle size**: Prevent bloat
+
+## Breaking the Build
+
+The build **WILL FAIL** if:
+- ❌ Any test fails
+- ❌ Coverage drops below 80%
+- ❌ Linting errors exist
+- ❌ Type errors exist
+- ❌ Production build fails
+- ❌ Lighthouse score < 90 for any category
+- ❌ Security vulnerabilities found (moderate+)
+
+## Test Organization
+
+```
+notebook-studio/
+├── src/
+│   ├── services/
+│   │   ├── llmService.ts
+│   │   └── llmService.test.ts
+│   ├── components/
+│   │   ├── Report.tsx
+│   │   └── Report.test.tsx
+│   └── test/
+│       ├── setup.ts
+│       ├── fixtures/
+│       └── utils/
+├── e2e/
+│   ├── app.spec.ts
+│   ├── notebook.spec.ts
+│   └── offline.spec.ts
+└── vitest.config.ts
+```
+
+## Best Practices
+
+1. **Write tests first** (TDD)
+2. **Test behavior, not implementation**
+3. **Use descriptive test names**
+4. **Mock external dependencies**
+5. **Test edge cases and errors**
+6. **Keep tests isolated**
+7. **Use test data factories**
+8. **Avoid test interdependence**
+
+## Common Issues
+
+### Test Failing on CI but Passing Locally
+
+- Clear node modules: `rm -rf node_modules && npm ci`
+- Check environment variables
+- Verify Node version matches (20.x)
+
+### Coverage Not Updating
+
+- Delete coverage folder: `rm -rf coverage`
+- Run `npm run test:coverage`
+
+### E2E Tests Flaky
+
+- Add proper waits: `await page.waitForSelector()`
+- Use `waitForLoadState('networkidle')`
+- Increase timeout for slow operations
+
+## Resources
+
+- [Vitest Documentation](https://vitest.dev/)
+- [Playwright Documentation](https://playwright.dev/)
+- [Testing Library](https://testing-library.com/docs/react-testing-library/intro/)

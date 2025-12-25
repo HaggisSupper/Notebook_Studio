@@ -1,5 +1,6 @@
 import { LLMSettings } from "../types";
 import { Type, Schema, FunctionDeclaration } from "@google/genai";
+import { fetchToolsFromMcp, callMcpTool, McpTool } from "./mcpClient";
 
 // --- Tool Definitions (OpenAI Format) ---
 export const TOOL_DEFINITIONS = [
@@ -99,6 +100,17 @@ export const executeTool = async (name: string, args: any, settings: LLMSettings
     return await executeFetchPage(args.url);
   }
 
+  // Fallback to MCP tools
+  if (settings.mcpServers && settings.mcpServers.length > 0) {
+    for (const url of settings.mcpServers) {
+      // Check if this tool belongs to this server (simple check by listing again or we could cache)
+      const tools = await fetchToolsFromMcp(url);
+      if (tools.find(t => t.name === name)) {
+        return await callMcpTool(url, name, args);
+      }
+    }
+  }
+
   return "Error: Tool not found.";
 };
 
@@ -139,14 +151,30 @@ const mapSchema = (schema: any): Schema => {
 };
 
 // Converts OpenAI format to Gemini FunctionDeclarations
-export const getGeminiTools = (): { functionDeclarations: FunctionDeclaration[] }[] => {
+export const getGeminiTools = async (settings: LLMSettings): Promise<{ functionDeclarations: FunctionDeclaration[] }[]> => {
+  const declarations: FunctionDeclaration[] = TOOL_DEFINITIONS.map(def => ({
+    name: def.function.name,
+    description: def.function.description,
+    parameters: mapSchema(def.function.parameters)
+  }));
+
+  // Add MCP Tools
+  if (settings.mcpServers) {
+    for (const url of settings.mcpServers) {
+      const mcpTools = await fetchToolsFromMcp(url);
+      mcpTools.forEach(tool => {
+        declarations.push({
+          name: tool.name,
+          description: tool.description,
+          parameters: mapSchema(tool.inputSchema)
+        });
+      });
+    }
+  }
+
   return [
     {
-      functionDeclarations: TOOL_DEFINITIONS.map(def => ({
-        name: def.function.name,
-        description: def.function.description,
-        parameters: mapSchema(def.function.parameters)
-      }))
+      functionDeclarations: declarations
     }
   ];
 };

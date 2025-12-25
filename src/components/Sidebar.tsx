@@ -1,10 +1,12 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Source, Notebook, Page, LLMSettings } from '../types';
 // @ts-ignore
 import JSZip from 'jszip';
 import { performDeepResearch } from '../services/llmService';
 import { sanitizeText, sanitizeFilename, sanitizeUrl } from '../utils/sanitize';
+import { parsePDF, parseDocx, parseExcel, runOCR } from '../services/documentParsers';
+import { extractTextFromPPTX } from '../services/documentParsers';
+import { vectorStore } from '../services/rag/vectorStore'; // RAG Integration // I will add this to the parser file shortly or assume it exists
 
 interface SidebarProps {
   notebooks: Notebook[];
@@ -291,24 +293,22 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   // --- Source Handlers ---
-  const handleAddText = () => {
-    if (!newTitle || !newTitle.trim()) {
-      alert("Please enter a title for the text source");
-      return;
+  const handleAddText = async () => {
+    if (newTitle && newContent) {
+      setProcessStatus('Indexing...');
+      setIsProcessing(true);
+      try {
+        await vectorStore.addDocument(newTitle, newContent, { title: newTitle, type: 'text' });
+        onAddSource({ title: newTitle, content: newContent, type: 'text' });
+        setNewTitle('');
+        setNewContent('');
+        setIsAdding(false);
+      } catch (e) {
+        console.error("Indexing failed", e);
+      }
+      setIsProcessing(false);
+      setProcessStatus('');
     }
-    if (!newContent || !newContent.trim()) {
-      alert("Please enter content for the text source");
-      return;
-    }
-    
-    // Sanitize inputs
-    const sanitizedTitle = sanitizeText(newTitle.trim());
-    const sanitizedContent = sanitizeText(newContent.trim());
-    
-    onAddSource({ title: sanitizedTitle, content: sanitizedContent, type: 'text' });
-    setNewTitle('');
-    setNewContent('');
-    setIsAdding(false);
   };
 
   const handleAddUrl = async () => {
@@ -336,35 +336,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const response = await fetch(newUrl);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const text = await response.text();
       
-      try {
-        const response = await fetch(sanitizedUrl, { 
-          signal: controller.signal,
-          mode: 'cors'
-        });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        const text = await response.text();
-        
-        if (!text || text.length === 0) {
-          throw new Error("URL returned empty content");
-        }
-        
-        // Sanitize the fetched content
-        const sanitizedContent = sanitizeText(text);
-        onAddSource({ title: sanitizeText(title), content: sanitizedContent, type: 'url' });
-      } catch (error: any) {
-        clearTimeout(timeoutId); // Clear timeout in case of error
-        throw error;
-      }
-    } catch (error: any) {
-      console.warn("CORS/Network error fetching URL:", error);
-      const errorMessage = error.name === 'AbortError' 
-        ? 'Request timed out after 10 seconds'
-        : error.message;
+      setProcessStatus('Indexing URL...');
+      await vectorStore.addDocument(title, text, { title, type: 'url', url: newUrl });
+      
+      onAddSource({ title: title, content: text, type: 'url' });
+    } catch (error) {
+      console.warn("CORS/Network error fetching URL, storing as reference:", error);
       onAddSource({ 
         title: sanitizeText(title), 
         content: `[URL Reference]: ${sanitizedUrl}\n(Note: Content could not be automatically fetched: ${errorMessage}. The AI will use the URL as context.)`, 
@@ -397,121 +378,119 @@ const Sidebar: React.FC<SidebarProps> = ({
       onAddSource({ title: result.title, content: result.content, type: 'text' });
     } catch (error: any) {
       console.error("Deep Research Failed", error);
-      alert(`Deep Research Failed: ${error.message || 'Unknown error occurred'}`);
-    } finally {
-      setResearchQuery('');
-      setIsProcessing(false);
-      setProcessStatus('');
+      alert("Deep Research Failed: " + error.message);
     }
-  };
-
-  const extractTextFromPPTX = async (arrayBuffer: ArrayBuffer): Promise<string> => {
-    const zip = await JSZip.loadAsync(arrayBuffer);
-    let extractedText = "";
-    const slideFiles = Object.keys(zip.files).filter(fileName => 
-      fileName.startsWith("ppt/slides/slide") && fileName.endsWith(".xml")
-    );
-    slideFiles.sort((a, b) => {
-      const numA = parseInt(a.replace(/\D/g, ''));
-      const numB = parseInt(b.replace(/\D/g, ''));
-      return numA - numB;
-    });
-    for (const fileName of slideFiles) {
-      const slideXml = await zip.files[fileName].async("string");
-      const slideTextMatch = slideXml.match(/<a:t[^>]*>(.*?)<\/a:t>/g);
-      if (slideTextMatch) {
-         const slideText = slideTextMatch.map((t: string) => t.replace(/<[^>]+>/g, '')).join(' ');
-         extractedText += `[SLIDE ${fileName.replace(/\D/g, '')}]: ${slideText}\n\n`;
-      }
-    }
-    return extractedText || "No text content found in slides.";
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
     
-    // Validate file size (max 10MB)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-    if (file.size > MAX_FILE_SIZE) {
-      alert(`File too large. Maximum size is 10MB. Selected file: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
+    setResearchQuery('');
+    setIsProcessing(false);
+    setProcessStatus('');
+  };
+
+  // --- File Handlers ---
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsProcessing(true);
-    setProcessStatus(`Ingesting ${file.name.split('.').pop()}...`);
+    const fileList = Array.from(files);
 
-    const isImage = file.type.startsWith('image/');
-    const isAudio = file.type.startsWith('audio/');
-    const isData = file.type.includes('json') || file.type.includes('csv') || file.name.endsWith('.csv') || file.name.endsWith('.json') || file.name.endsWith('.tsv');
-    const isCode = file.name.endsWith('.md') || file.name.endsWith('.txt') || file.name.endsWith('.py') || file.name.endsWith('.js') || file.name.endsWith('.ts');
-    const isPPT = file.name.endsWith('.pptx') || file.type.includes('presentation');
+    for (const file of fileList) {
+      setProcessStatus(`Ingesting ${file.name}...`);
+      
+      const isImage = file.type.startsWith('image/');
+      const isAudio = file.type.startsWith('audio/');
+      const isData = file.type.includes('json') || file.type.includes('csv') || file.name.endsWith('.csv') || file.name.endsWith('.json') || file.name.endsWith('.tsv');
+      const isCode = file.name.endsWith('.md') || file.name.endsWith('.txt') || file.name.endsWith('.py') || file.name.endsWith('.js') || file.name.endsWith('.ts');
+      const isPPT = file.name.endsWith('.pptx') || file.type.includes('presentation');
+      const isPDF = file.type === 'application/pdf';
 
-    if (isPPT) {
-       try {
-         const arrayBuffer = await file.arrayBuffer();
-         const text = await extractTextFromPPTX(arrayBuffer);
-         onAddSource({
-           title: file.name,
-           content: text,
-           mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-           type: 'ppt'
-         });
-         setIsAdding(false);
-       } catch (err: any) {
-         console.error("PPT Parse Error", err);
-         alert(`Failed to parse PPTX file: ${err.message || 'Unknown error'}`);
-       } finally {
-         setIsProcessing(false);
-         setProcessStatus('');
-         if (fileInputRef.current) fileInputRef.current.value = '';
-       }
-       return;
-    }
-
-    const reader = new FileReader();
-    
-    reader.onerror = () => {
-      console.error("FileReader error:", reader.error);
-      alert(`Failed to read file: ${reader.error?.message || 'Unknown error'}`);
-      setIsProcessing(false);
-      setProcessStatus('');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    };
-    
-    reader.onload = (event) => {
-      try {
-        const result = event.target?.result as string;
-        
-        if (!result) {
-          throw new Error("Failed to read file content");
+      if (isPPT) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          // Assuming extractTextFromPPTX is moved/available in documentParsers or we keep local definition
+          const text = await extractTextFromPPTX(arrayBuffer);
+          onAddSource({
+            title: file.name,
+            content: text,
+            mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            type: 'ppt'
+          });
+        } catch (err) {
+          console.error("PPT Parse Error", err);
         }
-        
-        if (isImage || isAudio) {
-          onAddSource({ title: file.name, data: result, mimeType: file.type, type: isImage ? 'image' : 'audio' });
+        continue;
+      }
+
+      // Handle other types
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        let content = '';
+        let data: string | undefined = undefined;
+        let finalType: 'data' | 'code' | 'text' | 'image' | 'audio' | 'ppt' = 'text';
+
+        if (isPDF) {
+          content = await parsePDF(arrayBuffer, (msg) => setProcessStatus(msg));
+          finalType = 'text';
+        } else if (file.name.endsWith('.docx')) {
+          content = await parseDocx(arrayBuffer);
+          finalType = 'text';
+        } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
+          content = await parseExcel(arrayBuffer);
+          finalType = 'data';
+        } else if (isImage) {
+          // Both store as data URL for VLM AND extract text via OCR
+          const reader = new FileReader();
+          const dataUrl = await new Promise<string>((resolve) => {
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(file);
+          });
+          data = dataUrl;
+          content = await runOCR(dataUrl);
+          finalType = 'image';
+        } else if (isAudio) {
+          const reader = new FileReader();
+          data = await new Promise<string>((resolve) => {
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(file);
+          });
+          finalType = 'audio';
         } else {
-          let finalType: 'data' | 'code' | 'text' = 'text';
+          // Standard text/code/data
+          const reader = new FileReader();
+          content = await new Promise<string>((resolve) => {
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsText(file);
+          });
           if (isData) finalType = 'data';
           if (isCode) finalType = 'code';
-          onAddSource({ title: file.name, content: result, mimeType: file.type || 'text/plain', type: finalType });
         }
-        setIsAdding(false);
-      } catch (err: any) {
-        console.error("Error processing file:", err);
-        alert(`Failed to process file: ${err.message || 'Unknown error'}`);
-      } finally {
-        setIsProcessing(false);
-        setProcessStatus('');
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
-    };
 
-    if (isImage || isAudio) {
-      reader.readAsDataURL(file);
-    } else {
-      reader.readAsText(file);
+        // --- RAG Indexing ---
+        if (content && content.length > 50) {
+           setProcessStatus(`Indexing ${file.name}...`);
+           try {
+             await vectorStore.addDocument(file.name, content, { title: file.name, type: finalType });
+           } catch (idxErr) {
+             console.error("Vector Indexing Failed:", idxErr);
+           }
+        }
+
+        onAddSource({ 
+          title: file.name, 
+          content,
+          data,
+          mimeType: file.type || 'text/plain', 
+          type: finalType 
+        });
+      } catch (err) {
+        console.error(`Error reading file ${file.name}:`, err);
+      }
     }
+
+    setIsProcessing(false);
+    setProcessStatus('');
+    setIsAdding(false);
+    alert('Ingestion Complete: ' + fileList.map(f => f.name).join(', '));
   };
 
   // --- Tree Handlers ---
@@ -584,7 +563,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className={sidebarClass}>
          {/* Sidebar Header */}
          <div className="p-4 flex items-center justify-between border-b border-neutral-800 bg-neutral-900">
-            <h2 className="text-[10px] font-black text-neutral-400 tracking-[0.3em] uppercase">Antigravity Studio</h2>
+            <h2 className="text-sm font-black text-neutral-400 tracking-widest uppercase">Antigravity Studio</h2>
             <div className="flex items-center gap-2">
                <button 
                  onClick={() => { setIsSidebarPinned(!isSidebarPinned); if(!isSidebarPinned) setIsSidebarOpen(true); }}
@@ -647,12 +626,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   onBlur={() => saveEditing(nb.id, true)}
                                   onKeyDown={e => e.key === 'Enter' && saveEditing(nb.id, true)}
                                   autoFocus
-                                  className="w-full bg-black text-white text-[10px] p-1 rounded border border-neutral-600 outline-none"
+                                  className="w-full bg-black text-white text-xs p-1 rounded border border-neutral-600 outline-none"
                                   onClick={e => e.stopPropagation()}
                                />
                             ) : (
                                <span 
-                                  className={`block text-[10px] font-black uppercase tracking-widest truncate ${activeNotebookId === nb.id ? 'text-white' : 'text-neutral-400'}`}
+                                  className={`block text-xs font-black uppercase tracking-wider truncate ${activeNotebookId === nb.id ? 'text-white' : 'text-neutral-400'}`}
                                   onDoubleClick={() => startEditing(nb.id, nb.name)}
                                >
                                   {nb.name}
@@ -660,6 +639,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                             )}
                          </div>
                          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+                            <button onClick={(e) => { e.stopPropagation(); startEditing(nb.id, nb.name); }} className="text-neutral-500 hover:text-white" title="Rename">
+                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
                             <button onClick={(e) => { e.stopPropagation(); handleExportNotebook(nb.id); }} className="text-neutral-500 hover:text-white" title="Export">
                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             </button>
@@ -695,18 +677,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                                            onBlur={() => saveEditing(page.id, false, nb.id)}
                                            onKeyDown={e => e.key === 'Enter' && saveEditing(page.id, false, nb.id)}
                                            autoFocus
-                                           className="w-full bg-black text-white text-[10px] p-0.5 rounded border border-neutral-600 outline-none"
+                                           className="w-full bg-black text-white text-xs p-0.5 rounded border border-neutral-600 outline-none"
                                            onClick={e => e.stopPropagation()}
                                         />
                                      ) : (
                                         <span 
-                                           className="block text-[10px] font-mono truncate"
+                                           className="block text-xs font-mono truncate"
                                            onDoubleClick={(e) => { e.stopPropagation(); startEditing(page.id, page.name); }}
                                         >
                                            {page.name}
                                         </span>
                                      )}
                                   </div>
+                                  <button onClick={(e) => { e.stopPropagation(); startEditing(page.id, page.name); }} className="opacity-0 group-hover/page:opacity-100 text-neutral-600 hover:text-white p-0.5" title="Rename">
+                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                  </button>
                                   <button onClick={(e) => { e.stopPropagation(); onDeletePage(nb.id, page.id); }} className="opacity-0 group-hover/page:opacity-100 text-neutral-600 hover:text-red-500 p-0.5">
                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
                                   </button>
@@ -725,7 +710,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="border-b border-neutral-800">
                <button 
                  onClick={() => toggleSection('sources')}
-                 className="w-full flex items-center justify-between p-4 text-[10px] font-black text-neutral-100 uppercase tracking-[0.2em] hover:bg-neutral-800 transition-colors"
+                 className="w-full flex items-center justify-between p-4 text-xs font-black text-neutral-100 uppercase tracking-widest hover:bg-neutral-800 transition-colors"
                >
                  <span>Context Signals</span>
                  <svg className={`w-3 h-3 transition-transform ${openSections.sources ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -759,16 +744,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {isAdding && (
                   <div className="mb-6 p-3 bg-neutral-900 border border-neutral-800 rounded">
                     <div className="flex mb-3 bg-neutral-800 rounded p-1">
-                      <button onClick={() => setAddMode('text')} className={`flex-1 py-1 text-[7px] font-black uppercase rounded ${addMode === 'text' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>Text</button>
-                      <button onClick={() => setAddMode('file')} className={`flex-1 py-1 text-[7px] font-black uppercase rounded ${addMode === 'file' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>File</button>
-                      <button onClick={() => setAddMode('url')} className={`flex-1 py-1 text-[7px] font-black uppercase rounded ${addMode === 'url' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>URL</button>
-                      <button onClick={() => setAddMode('agent')} className={`flex-1 py-1 text-[7px] font-black uppercase rounded ${addMode === 'agent' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>Agent</button>
+                      <button onClick={() => setAddMode('text')} className={`flex-1 py-1 text-[10px] font-black uppercase rounded ${addMode === 'text' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>Text</button>
+                      <button onClick={() => setAddMode('file')} className={`flex-1 py-1 text-[10px] font-black uppercase rounded ${addMode === 'file' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>File</button>
+                      <button onClick={() => setAddMode('url')} className={`flex-1 py-1 text-[10px] font-black uppercase rounded ${addMode === 'url' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>URL</button>
+                      <button onClick={() => setAddMode('agent')} className={`flex-1 py-1 text-[10px] font-black uppercase rounded ${addMode === 'agent' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>Agent</button>
                     </div>
 
                     {isProcessing && (
                        <div className="mb-3 text-center">
                           <div className="w-4 h-4 border-2 border-neutral-600 border-t-white rounded-full animate-spin mx-auto mb-1"></div>
-                          <span className="text-[8px] text-neutral-400 uppercase tracking-widest">{processStatus}</span>
+                          <span className="text-[10px] text-neutral-400 uppercase tracking-widest">{processStatus}</span>
                        </div>
                     )}
 
@@ -776,20 +761,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <>
                         <div className="flex gap-2 mb-3">
                           <button 
-                            className="flex-1 bg-neutral-800 text-[8px] font-black uppercase p-2 border border-neutral-700 hover:border-white transition-all text-neutral-400 hover:text-white rounded"
+                            className="flex-1 bg-neutral-800 text-[10px] font-black uppercase p-2 border border-neutral-700 hover:border-white transition-all text-neutral-400 hover:text-white rounded"
                             onClick={() => fileInputRef.current?.click()}
                           >
                             Select File
                           </button>
                           <input 
-                            type="file" 
-                            hidden 
-                            ref={fileInputRef} 
-                            onChange={handleFileUpload} 
-                            accept="image/*,audio/*,application/pdf,application/json,text/csv,text/plain,text/markdown,.md,.tsv,.js,.py,.html,.css,.pptx,.docx"
-                          />
+                  type="file" 
+                  hidden 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  multiple
+                  accept="image/*,audio/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown,application/json"
+                />
                         </div>
-                        <p className="text-[7px] text-neutral-600 font-mono text-center mb-2">SUPPORTS: PPTX, PDF, DOCX, IMG, AUDIO, CODE, CSV, JSON</p>
+                        <p className="text-[10px] text-neutral-600 font-mono text-center mb-2">SUPPORTS: PPTX, PDF, DOCX, IMG, AUDIO, CODE, CSV, JSON</p>
                       </>
                     )}
 
@@ -798,19 +784,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <input
                           type="text"
                           placeholder="TITLE"
-                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded text-[9px] font-mono outline-none text-neutral-200 uppercase"
+                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded text-xs font-mono outline-none text-neutral-200 uppercase"
                           value={newTitle}
                           onChange={(e) => setNewTitle(e.target.value)}
                         />
                         <textarea
                           placeholder="DATA"
-                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded h-20 text-[9px] font-mono outline-none text-neutral-400 resize-none"
+                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded h-20 text-xs font-mono outline-none text-neutral-400 resize-none"
                           value={newContent}
                           onChange={(e) => setNewContent(e.target.value)}
                         />
                         <div className="flex gap-2">
-                          <button onClick={handleAddText} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[9px] uppercase tracking-widest">Inject</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[9px] uppercase">Abort</button>
+                          <button onClick={handleAddText} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[10px] uppercase tracking-widest">Inject</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[10px] uppercase">Abort</button>
                         </div>
                       </>
                     )}
@@ -820,13 +806,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <input
                           type="text"
                           placeholder="https://example.com"
-                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded text-[9px] font-mono outline-none text-neutral-200"
+                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded text-xs font-mono outline-none text-neutral-200"
                           value={newUrl}
                           onChange={(e) => setNewUrl(e.target.value)}
                         />
                         <div className="flex gap-2">
-                          <button onClick={handleAddUrl} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[9px] uppercase tracking-widest">Fetch</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[9px] uppercase">Abort</button>
+                          <button onClick={handleAddUrl} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[10px] uppercase tracking-widest">Fetch</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[10px] uppercase">Abort</button>
                         </div>
                       </>
                     )}
@@ -834,30 +820,30 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {!isProcessing && addMode === 'agent' && (
                       <>
                         <div className="bg-neutral-800 p-2 mb-2 rounded border border-neutral-700">
-                           <p className="text-[8px] text-neutral-400 font-mono mb-2">DEEP RESEARCH AGENT</p>
+                           <p className="text-xs text-neutral-400 font-mono mb-2">DEEP RESEARCH AGENT</p>
                            <textarea
                             placeholder="Describe research topic..."
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-[9px] font-mono outline-none text-neutral-300 resize-none h-20"
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-xs font-mono outline-none text-neutral-300 resize-none h-20"
                             value={researchQuery}
                             onChange={(e) => setResearchQuery(e.target.value)}
                            />
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={handleDeepResearch} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[9px] uppercase tracking-widest">Research</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[9px] uppercase">Abort</button>
+                          <button onClick={handleDeepResearch} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[10px] uppercase tracking-widest">Research</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[10px] uppercase">Abort</button>
                         </div>
                       </>
                     )}
                     
                     {!isProcessing && addMode === 'file' && (
-                      <button onClick={() => setIsAdding(false)} className="w-full bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[9px] uppercase">Abort</button>
+                      <button onClick={() => setIsAdding(false)} className="w-full bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[10px] uppercase">Abort</button>
                     )}
                   </div>
                 )}
 
                 <div className="space-y-2 pb-4">
                   {!activeNotebook || activeNotebook.sources.length === 0 ? (
-                    <p className="text-neutral-600 text-[8px] font-mono uppercase tracking-widest text-center py-10 italic">No signals</p>
+                    <p className="text-neutral-600 text-xs font-mono uppercase tracking-widest text-center py-10 italic">No signals</p>
                   ) : (
                     activeNotebook.sources.map((source, index) => (
                       <div 
@@ -873,11 +859,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                               <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 11-4 0 2 2 0 014 0zM8 12a2 2 0 11-4 0 2 2 0 014 0zM8 18a2 2 0 11-4 0 2 2 0 014 0zM16 6a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 11-4 0 2 2 0 014 0zM16 18a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                            </div>
                            <div className={`w-1 h-2 transition-colors ${source.type === 'data' ? 'bg-blue-500' : source.type === 'image' ? 'bg-purple-500' : source.type === 'audio' ? 'bg-red-500' : source.type === 'url' ? 'bg-green-500' : source.type === 'ppt' ? 'bg-orange-500' : 'bg-neutral-600'} group-hover:bg-white`}></div>
-                           <h3 className="font-black text-neutral-200 text-[9px] truncate pr-4 uppercase tracking-tight flex-1">{source.title}</h3>
+                           <h3 className="font-black text-neutral-200 text-xs truncate pr-4 uppercase tracking-tight flex-1">{source.title}</h3>
                         </div>
                          <div className="flex gap-2 pl-4">
-                            <span className="text-[7px] font-black bg-neutral-900 text-neutral-500 px-1 rounded uppercase">{source.type}</span>
-                            <span className="text-[7px] font-black bg-neutral-900 text-neutral-500 px-1 rounded uppercase">
+                            <span className="text-[10px] font-black bg-neutral-900 text-neutral-500 px-1 rounded uppercase">{source.type}</span>
+                            <span className="text-[10px] font-black bg-neutral-900 text-neutral-500 px-1 rounded uppercase">
                                {source.content ? (source.content.length / 1024).toFixed(1) + 'KB' : 'BINARY'}
                             </span>
                          </div>
@@ -890,7 +876,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                         {/* Hover Preview Tooltip */}
                         <div className="hidden lg:block absolute left-full top-0 ml-4 w-64 bg-neutral-900 border border-neutral-800 p-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                          <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-2 border-b border-neutral-800 pb-1">{source.title}</h4>
+                          <h4 className="text-xs font-black text-white uppercase tracking-widest mb-2 border-b border-neutral-800 pb-1">{source.title}</h4>
                           {source.type === 'image' && source.data ? (
                              <img src={source.data} className="w-full rounded mb-1" alt="Preview" />
                           ) : source.type === 'audio' ? (

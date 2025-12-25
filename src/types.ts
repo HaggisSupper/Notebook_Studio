@@ -106,6 +106,10 @@ export interface LLMSettings {
   apiKey?: string;
   baseUrl?: string;
   searchConfig: SearchConfig;
+  embeddingModel?: string;
+  visionModel?: string;
+  localEnrichment?: boolean;
+  mcpServers?: string[];
 }
 
 export interface SQLConfig {

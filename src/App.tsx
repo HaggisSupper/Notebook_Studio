@@ -10,7 +10,8 @@ import TableView from './components/TableView';
 import Dashboard from './components/Dashboard';
 import SettingsModal from './components/SettingsModal';
 import Canvas from './components/Canvas';
-import { generateStudioContent } from './services/llmService';
+import { generateStudioContent, performDeepResearch } from './services/llmService';
+import * as sqlService from './services/sqlService';
 
 const INITIAL_PAGE: Page = {
   id: 'pg-1',
@@ -33,12 +34,12 @@ const App: React.FC = () => {
     notebooks: [INITIAL_NOTEBOOK],
     activeNotebookId: 'nb-1',
     activePageId: 'pg-1',
-    activeView: 'report',
+    activeView: 'chat',
     isLoading: false,
     isDarkMode: true,
     settings: {
       provider: 'google',
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-2.0-flash-exp',
       searchConfig: {
         provider: 'simulated',
         apiKey: ''
@@ -61,6 +62,9 @@ const App: React.FC = () => {
   // Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarPinned, setIsSidebarPinned] = useState(true);
+  
+  // UX State
+  const [userClickedGenerate, setUserClickedGenerate] = useState(false);
 
   // Source History State for Undo/Redo
   const [sourceHistory, setSourceHistory] = useState<{past: Notebook[][], future: Notebook[][]}>({ past: [], future: [] });
@@ -245,16 +249,73 @@ const App: React.FC = () => {
   }, []);
 
   // --- Source Management ---
-  const addSource = useCallback((source: Omit<Source, 'id'>) => {
-    pushSourceHistory();
-    setState(prev => ({
-      ...prev,
-      notebooks: prev.notebooks.map(nb => nb.id === prev.activeNotebookId ? {
-        ...nb,
-        sources: [...nb.sources, { ...source, id: Math.random().toString(36).substr(2, 9) }]
-      } : nb)
-    }));
-  }, [state.activeNotebookId, state.notebooks]); // Added dependencies to ensure pushHistory captures correct state
+  // --- SQL Integration ---
+  useEffect(() => {
+    sqlService.initDatabase();
+  }, []);
+
+  const handleExecuteSQL = (query: string) => {
+    try {
+      const results = sqlService.runQuery(query);
+      const schema = sqlService.getSchemaContext();
+      setState(prev => ({
+        ...prev,
+        sqlConfig: {
+          ...prev.sqlConfig,
+          schemaContext: schema
+        }
+      }));
+      return results;
+    } catch (err) {
+      console.error("SQL Execution Error:", err);
+      return null;
+    }
+  };
+
+  const handleAddSource = async (newSource: Omit<Source, 'id'>) => {
+    const id = `src-${Date.now()}`;
+    const source: Source = { ...newSource, id };
+
+    // --- Phase 4: Data Ingestion Logic ---
+    if (source.type === 'data' && source.content) {
+      try {
+        const jsonData = JSON.parse(source.content);
+        const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData];
+        sqlService.importToTable(source.title.replace(/[^a-zA-Z0-9]/g, '_'), dataArray);
+        
+        // JSON First-pass via Local Model
+        if (state.settings.localEnrichment) {
+          console.log("[Ingest] Performing local first-pass summary for data:", source.title);
+          // Simplified call to llmService for summary
+          const summary = await generateStudioContent(
+            [source], 
+            'chat', 
+            { ...state.settings, provider: 'local', model: 'local-model' }, 
+            "Provide a one-paragraph statistical summary of this dataset."
+          );
+          source.content = `[LOCAL_SUMMARY]: ${summary}\n\n[RAW_DATA]:\n${source.content}`;
+        }
+      } catch (e) {
+        console.warn("Failed to parse/import data source:", e);
+      }
+    }
+
+    const updatedNotebooks = state.notebooks.map(nb => 
+      nb.id === state.activeNotebookId 
+        ? { ...nb, sources: [...nb.sources, source] }
+        : nb
+    );
+    setState(prev => ({ ...prev, notebooks: updatedNotebooks }));
+    
+    // Update SQL schema context if data was added
+    if (source.type === 'data') {
+      const updatedSchema = sqlService.getSchemaContext();
+      setState(prev => ({
+        ...prev,
+        sqlConfig: { ...prev.sqlConfig, schemaContext: updatedSchema }
+      }));
+    }
+  };
 
   const removeSource = useCallback((id: string) => {
     pushSourceHistory();
@@ -571,7 +632,7 @@ const App: React.FC = () => {
             onRenamePage={handleRenamePage}
             onReorderPages={handleReorderPages}
 
-            onAddSource={addSource} 
+            onAddSource={handleAddSource} 
             onRemoveSource={removeSource} 
             onReorderSources={handleReorderSources}
 
@@ -687,24 +748,34 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <button onClick={() => handleGenerate(state.activeView)} className="w-full bg-white text-black font-black py-4 rounded uppercase tracking-[0.2em] text-[10px] hover:bg-neutral-200 transition-all border-2 border-transparent focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]">Execute Single View</button>
-                      <button onClick={handleGenerateAll} className="w-full bg-neutral-700 border-2 border-neutral-500 text-neutral-300 font-black py-4 rounded hover:bg-neutral-500 uppercase tracking-[0.2em] text-[10px] transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]">Execute Full Workspace</button>
-                      <button onClick={cancelGeneration} className="w-full mt-2 text-[9px] font-black text-neutral-400 uppercase tracking-widest hover:text-neutral-200 transition-all border-2 border-transparent hover:border-orange-500 rounded p-2">Abort Procedure</button>
+                      <button onClick={() => { setUserClickedGenerate(true); handleGenerate(state.activeView); }} className="w-full bg-white text-black font-black py-4 rounded uppercase tracking-[0.2em] text-[10px] hover:bg-neutral-200 transition-colors">Execute Single View</button>
+                      <button onClick={() => { setUserClickedGenerate(true); handleGenerateAll(); }} className="w-full bg-neutral-900 border border-neutral-600 text-neutral-300 font-black py-4 rounded hover:bg-neutral-700 uppercase tracking-[0.2em] text-[10px] transition-colors">Execute Full Workspace</button>
+                      <button onClick={cancelGeneration} className="w-full mt-2 text-[9px] font-black text-neutral-500 uppercase tracking-widest hover:text-neutral-300 transition-colors">Abort Procedure</button>
                     </div>
                   </div>
                 </div>
               ) : state.isLoading ? (
                 <div className="h-[70vh] flex flex-col items-center justify-center space-y-4">
-                  <div className="w-12 h-0.5 bg-neutral-500 overflow-hidden">
+                  <div className="w-12 h-0.5 bg-neutral-700 overflow-hidden">
                     <div className="w-full h-full bg-white animate-[loading_1.5s_infinite]" />
                   </div>
-                  <p className="text-neutral-400 font-mono text-[9px] tracking-[0.4em] uppercase">Synthesizing Signal Data...</p>
+                  <p className="text-neutral-500 font-mono text-[9px] tracking-[0.4em] uppercase">Synthesizing Signal Data...</p>
                 </div>
               ) : state.activeView === 'chat' ? (
-                <div className="h-[70vh] flex flex-col items-center justify-center text-center opacity-40">
-                  <div className="w-24 h-[1px] bg-neutral-500 mb-8" />
-                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.5em]">Command Interface Active</p>
-                  <p className="text-[9px] font-mono text-neutral-500 mt-4 max-w-xs uppercase">Cluster is ready for natural language interrogation.</p>
+                <div className="h-[50vh] flex flex-col items-center justify-center text-center opacity-20 pointer-events-none select-none">
+                  <div className="w-16 h-[1px] bg-neutral-500 mb-4" />
+                  <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.3em]">Ready</p>
+                </div>
+              ) : !activePage?.generatedContent[state.activeView] && !userClickedGenerate ? (
+                <div className="h-[70vh] flex flex-col items-center justify-center text-center">
+                   <div className="w-16 h-16 rounded-full border border-neutral-700 border-dashed mb-8 animate-[spin_20s_linear_infinite]"></div>
+                   <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em] mb-4">Module Ready: {state.activeView}</h2>
+                   <button 
+                     onClick={() => setUserClickedGenerate(true)}
+                     className="px-6 py-3 border border-orange-500/50 text-orange-500 rounded text-[9px] font-black uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all shadow-[0_0_15px_rgba(249,115,22,0.2)]"
+                   >
+                     Initialize Synthesis
+                   </button>
                 </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-1000">
@@ -738,19 +809,21 @@ const App: React.FC = () => {
 
           {/* Floating Chat */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-8 pointer-events-none z-30">
-            <div className="pointer-events-auto bg-neutral-700/95 backdrop-blur-md rounded border border-neutral-600 shadow-2xl flex flex-col max-h-[450px]">
-              <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                {activePage?.chatHistory.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] px-6 py-4 rounded text-xs leading-relaxed ${msg.role === 'user' ? 'bg-neutral-100 text-black font-black uppercase' : 'bg-neutral-600 text-neutral-200 font-mono'}`}>
-                      {msg.content}
+            <div className="pointer-events-auto bg-neutral-700/95 backdrop-blur-md rounded border border-neutral-600 shadow-2xl flex flex-col transition-all duration-300" style={{ maxHeight: activePage?.chatHistory.length ? '60vh' : 'auto' }}>
+              {activePage?.chatHistory.length > 0 && (
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar border-b border-neutral-600/50">
+                  {activePage?.chatHistory.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] px-4 py-3 rounded text-xs leading-relaxed ${msg.role === 'user' ? 'bg-neutral-100 text-black font-medium' : 'bg-neutral-600/50 text-neutral-200 font-mono'}`}>
+                        {msg.content}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
               
-              <form onSubmit={handleChat} className="p-4 border-t border-neutral-600 flex gap-4 bg-neutral-700">
+              <form onSubmit={handleChat} className="p-3 flex gap-3 bg-neutral-700/50">
                 <input 
                   type="text"
                   value={chatInput}
@@ -758,7 +831,9 @@ const App: React.FC = () => {
                   placeholder="INPUT COMMAND OR QUERY..."
                    className="flex-1 bg-neutral-600 border-2 border-neutral-500 text-neutral-100 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
                 />
-                <button type="submit" disabled={state.isLoading} className="bg-neutral-100 disabled:opacity-20 text-black w-14 h-14 rounded flex items-center justify-center transition-all hover:bg-white border-2 border-transparent hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg></button>
+                <button type="submit" disabled={state.isLoading} className="bg-neutral-100 disabled:opacity-20 text-black w-12 rounded flex items-center justify-center hover:bg-white transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+                </button>
               </form>
             </div>
           </div>

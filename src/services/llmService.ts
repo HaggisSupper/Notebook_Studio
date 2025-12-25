@@ -1,7 +1,34 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Source, LLMSettings } from "../types";
 import { TOOL_DEFINITIONS, executeTool, getGeminiTools } from "./toolService";
+import { fetchToolsFromMcp } from "./mcpClient";
+import { vectorStore } from "./rag/vectorStore";
+
+const ENRICHMENT_PROMPT = `As a Local Intelligence Node, your goal is to PRE-STRUCTURE the user's data and prompt for a Cloud LLM.
+Analyze the provided sources and context. Extract key entities, numbers, and relationships.
+Re-write the user's request to be high-density, structured, and explicit.
+OUTPUT ONLY THE ENRICHED PROMPT TEXT. NO PREAMBLE.`;
+
+const callLocalModel = async (prompt: string, context: string): Promise<string> => {
+  try {
+    const response = await fetch('http://localhost:1234/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'deepseek-r1-distill-qwen-7b', // Updated to available local model
+        messages: [
+          { role: 'system', content: ENRICHMENT_PROMPT },
+          { role: 'user', content: `CONTEXT:\n${context}\n\nUSER_REQUEST: ${prompt}` }
+        ]
+      })
+    });
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (err) {
+    console.warn("Local enrichment failed, falling back to original prompt:", err);
+    return prompt;
+  }
+};
 
 export const generateStudioContent = async (
   sources: Source[],
@@ -19,11 +46,39 @@ export const generateStudioContent = async (
   
   const parts: any[] = [];
   
-  // Add text and URL context
-  const textContext = sources
-    .filter(s => ['text', 'url', 'ppt'].includes(s.type))
-    .map(s => `SOURCE (${s.type.toUpperCase()}): ${s.title}\nCONTENT: ${s.content}`)
-    .join('\n\n---\n\n');
+  // --- RAG / Context Retrieval Logic ---
+  let textContext = "";
+
+  if (type === 'chat' && chatQuery) {
+    // RAG Mode: Retrieve relevant chunks
+    console.log(`[RAG] Searching for context relevant to: "${chatQuery}"`);
+    try {
+       const results = await vectorStore.search(chatQuery, 5); // Top 5 chunks
+       if (results.length > 0) {
+          textContext = results.map((r, i) => `RELEVANT_EXCERPT_${i+1} (Score: ${r.score}):\n${r.content}`).join('\n\n---\n\n');
+          console.log(`[RAG] Found ${results.length} relevant chunks.`);
+       } else {
+          console.log(`[RAG] No relevant chunks found in index. Falling back to simple concatenation (Context Stuffing).`);
+          // Fallback to full text if nothing found (or index empty)
+          textContext = sources
+            .filter(s => ['text', 'url', 'ppt'].includes(s.type))
+            .map(s => `SOURCE (${s.type.toUpperCase()}): ${s.title}\nCONTENT: ${s.content}`)
+            .join('\n\n---\n\n');
+       }
+    } catch (e) {
+       console.warn("[RAG] Vector Search failed:", e);
+       textContext = sources
+         .filter(s => ['text', 'url', 'ppt'].includes(s.type))
+         .map(s => `SOURCE (${s.type.toUpperCase()}): ${s.title}\nCONTENT: ${s.content}`)
+         .join('\n\n---\n\n');
+    }
+  } else {
+    // Generative Mode: Use full context (Context Window permitting)
+    textContext = sources
+      .filter(s => ['text', 'url', 'ppt'].includes(s.type))
+      .map(s => `SOURCE (${s.type.toUpperCase()}): ${s.title}\nCONTENT: ${s.content}`)
+      .join('\n\n---\n\n');
+  }
   
   if (textContext) {
     parts.push({ text: `TEXT_AND_URL_CONTEXT:\n${textContext}` });
@@ -97,14 +152,14 @@ export const generateStudioContent = async (
   const stylePrefix = styleDefinition ? `STYLE GUIDELINES: ${styleDefinition}\n` : '';
 
   const prompts = {
-    report: `${focusPrefix}${complexityPrefix}${stylePrefix}Create a detailed professional report. If data sources (CSV/JSON) are present, include a 'Data Analysis' section with specific insights derived from the numbers.`,
-    infographic: `${focusPrefix}${complexityPrefix}${stylePrefix}Summarize the sources into key metrics and visualizable data. Prioritize extracting numbers from provided Data/CSV/JSON sources.`,
-    mindmap: `${focusPrefix}${complexityPrefix}${stylePrefix}Organize core concepts into a hierarchical structure.`,
-    flashcards: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate 8 study cards (question/answer).`,
-    slides: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate a 6-slide presentation deck layout.`,
+    report: `${focusPrefix}${complexityPrefix}${stylePrefix}Create a detailed professional report. If data sources (CSV/JSON) are present, include a 'Data Analysis' section with specific insights derived from the numbers. Use a clean, data-driven 'Gen-X' dark aesthetic.`,
+    infographic: `${focusPrefix}${complexityPrefix}${stylePrefix}Summarize the sources into key metrics and visualizable data. Prioritize extracting numbers from provided Data/CSV/JSON sources. IMPORTANT: Suggest 3-4 specific prompts for image generation to accompany these stats.`,
+    mindmap: `${focusPrefix}${complexityPrefix}${stylePrefix}Organize core concepts into a hierarchical structure. Optimize for 'Gen-X' futuristic dark theme.`,
+    flashcards: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate 8 study cards (question/answer). Use high-density technical language.`,
+    slides: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate a 6-slide presentation deck layout. For each slide, include a 'Visuallization Prompt' for an image generator (like Flux or DALL-E) to create a matching background or illustration.`,
     table: `${focusPrefix}${complexityPrefix}${stylePrefix}Extract key structured data into a markdown-compatible table format represented in JSON. If raw CSV data is present, format it cleanly. 
     ${sqlContext ? 'IMPORTANT: For SQL contexts, generate a flat table output that represents the result of a conversation-driven query. Include JOIN operations if multiple tables are relevant, and document any aggregations or calculations performed.' : ''}`,
-    dashboard: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate a data-centric dashboard layout. 
+    dashboard: `${focusPrefix}${complexityPrefix}${stylePrefix}Generate a data-centric dashboard layout with a 'Cyberpunk/Gen-X' dark aesthetic. 
     - Identify key trends and distributions in the data.
     - Create 3-4 distinct charts (mix of 'area', 'line', 'bar', 'pie', 'scatter').
     - For time-series, use 'area' or 'line'. For categorical comparisons, use 'bar' or 'pie'. For correlations, use 'scatter'.
@@ -123,6 +178,16 @@ export const generateStudioContent = async (
     : "";
 
   parts.push({ text: `TASK: ${prompts[type]}${chatInstruction}` });
+
+  // --- Hybrid Orchestration: Local Enrichment ---
+  let finalPrompt = prompts[type];
+  if (settings.localEnrichment) {
+    console.log("[Orchestrator] Running Local Enrichment via LMS...");
+    const contextStr = parts.map(p => p.text || "[Multimodal Data]").join('\n\n');
+    finalPrompt = await callLocalModel(prompts[type], contextStr);
+    // Replace the last part (the prompt) with the enriched one
+    parts[parts.length - 1] = { text: `ENRICHED_TASK: ${finalPrompt}${chatInstruction}` };
+  }
 
   const schemas = {
     report: {
@@ -236,14 +301,14 @@ export const generateStudioContent = async (
 
   if (settings.provider === 'google') {
     if (!process.env.API_KEY) {
-      throw new Error("Google API key is not configured. Please set the API_KEY environment variable.");
+      throw new Error("Missing Google API Key. Please set GEMINI_API_KEY in your .env file or configure environment.");
     }
     
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     try {
       const response = await ai.models.generateContent({
-        model: settings.model || 'gemini-3-pro-preview',
+        model: settings.model || 'gemini-2.0-flash-exp', // Prefer Flash 2.0
         contents: { parts },
         config: {
           responseMimeType: type === 'chat' ? 'text/plain' : "application/json",
@@ -256,12 +321,15 @@ export const generateStudioContent = async (
         throw new Error("Empty response from Gemini API");
       }
       
-      if (type === 'chat') return response.text;
+      const text = typeof response.text === 'function' ? response.text() : response.text; // Safety check if method/property
+      
+      if (type === 'chat') return text;
       
       try {
-        return JSON.parse(response.text);
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanText);
       } catch (parseError) {
-        console.error('Failed to parse JSON response:', response.text);
+        console.error('Failed to parse JSON response:', text);
         throw new Error("Invalid JSON response from API");
       }
     } catch (apiError: any) {
@@ -334,7 +402,8 @@ export const generateStudioContent = async (
     if (type === 'chat') return content;
     
     try {
-      return JSON.parse(content);
+      const jsonContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(jsonContent);
     } catch (parseError) {
       console.error('Failed to parse JSON response:', content);
       throw new Error("Invalid JSON response from API");
@@ -393,33 +462,34 @@ export const performDeepResearch = async (
         throw new Error("Google API key is not configured for deep research");
       }
       
-      try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const modelName = settings.model.includes('gemini') ? settings.model : 'gemini-3-pro-preview';
-        
-        // Gemini Adapter: Convert standard message history into a clear transcript for context
-        // This is often more robust for 'Agentic' loops than trying to perfectly map JSON objects to Content history
-        // which can be fragile with mismatched IDs or null contents.
-        let transcript = "";
-        messages.forEach(m => {
-          if (m.role === 'system') transcript += `System Instruction: ${m.content}\n\n`;
-          else if (m.role === 'user') transcript += `User: ${m.content}\n\n`;
-          else if (m.role === 'assistant') {
-            if (m.tool_calls) {
-               m.tool_calls.forEach((tc: any) => {
-                  transcript += `Assistant (Thinking): I will call ${tc.function.name} with ${tc.function.arguments}\n`;
-               });
-            } else if (m.content) {
-               transcript += `Assistant: ${m.content}\n\n`;
-            }
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // Use Flash 2.0 for Agents
+      const modelName = settings.model.includes('gemini') ? settings.model : 'gemini-2.0-flash-exp';
+      
+      // Gemini Adapter: Convert standard message history into a clear transcript for context
+      // This is often more robust for 'Agentic' loops than trying to perfectly map JSON objects to Content history
+      // which can be fragile with mismatched IDs or null contents.
+      let transcript = "";
+      messages.forEach(m => {
+        if (m.role === 'system') transcript += `System Instruction: ${m.content}\n\n`;
+        else if (m.role === 'user') transcript += `User: ${m.content}\n\n`;
+        else if (m.role === 'assistant') {
+          if (m.tool_calls) {
+             m.tool_calls.forEach((tc: any) => {
+                transcript += `Assistant (Thinking): I will call ${tc.function.name} with ${tc.function.arguments}\n`;
+             });
+          } else if (m.content) {
+             transcript += `Assistant: ${m.content}\n\n`;
           }
-          else if (m.role === 'tool') {
-             transcript += `Tool Output (${m.name}): ${m.content}\n\n`;
-          }
-        });
-        
-        transcript += `\n\nAssistant (You):`;
+        }
+        else if (m.role === 'tool') {
+           transcript += `Tool Output (${m.name}): ${m.content}\n\n`;
+        }
+      });
+      
+      transcript += `\n\nAssistant (You):`;
 
+      try {
         const response = await ai.models.generateContent({
           model: modelName,
           contents: { parts: [{ text: transcript }] },
@@ -458,7 +528,29 @@ export const performDeepResearch = async (
       if (!baseUrl) {
         throw new Error(`Base URL is required for ${settings.provider} provider`);
       }
-      
+
+      // Fetch MCP tools to combine with static tools
+      const combinedTools = [...tools];
+      if (settings.mcpServers) {
+        for (const url of settings.mcpServers) {
+          try {
+             const mcpTools = await fetchToolsFromMcp(url);
+             mcpTools.forEach(tool => {
+               combinedTools.push({
+                 type: 'function',
+                 function: {
+                   name: tool.name,
+                   description: tool.description,
+                   parameters: tool.inputSchema
+                 }
+               });
+             });
+          } catch (mcpErr) {
+             console.warn(`Failed to fetch tools from MCP ${url}`, mcpErr);
+          }
+        }
+      }
+
       try {
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: 'POST',

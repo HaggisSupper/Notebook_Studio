@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🧪 Running full test suite before push..."
+
+# Run all unit tests
+npm run test:unit || {
+  echo "❌ Unit tests failed. Fix tests before pushing."
+  exit 1
+}
+
+# Run integration tests
+npm run test:integration || {
+  echo "❌ Integration tests failed. Fix tests before pushing."
+  exit 1
+}
+
+# Verify coverage thresholds
+npm run test:coverage:check || {
+  echo "❌ Coverage below threshold. Write more tests."
+  exit 1
+}
+
+# Ensure build succeeds
+npm run build || {
+  echo "❌ Build failed. Fix build errors before pushing."
+  exit 1
+}
+
+echo "✅ All pre-push checks passed. Pushing to remote..."
