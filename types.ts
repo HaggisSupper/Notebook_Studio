@@ -80,6 +80,8 @@ export interface Page {
     dashboard?: DashboardData;
   };
   chatHistory: ChatMessage[];
+  complexityLevel?: string;
+  styleDefinition?: string;
 }
 
 export interface Notebook {
@@ -89,7 +91,7 @@ export interface Notebook {
   pages: Page[];
 }
 
-export type StudioView = 'report' | 'infographic' | 'mindmap' | 'flashcards' | 'slides' | 'table' | 'dashboard' | 'chat';
+export type StudioView = 'report' | 'infographic' | 'mindmap' | 'flashcards' | 'slides' | 'table' | 'dashboard' | 'chat' | 'canvas';
 
 export type LLMProvider = 'google' | 'openrouter' | 'local';
 
@@ -111,6 +113,14 @@ export interface SQLConfig {
   database?: string;
   active: boolean;
   schemaContext: string; // We store the schema/tables description here
+  transformLog?: Array<{
+    timestamp: string;
+    operation: string;
+    description: string;
+    inputFields?: string[];
+    outputFields?: string[];
+    calculation?: string;
+  }>;
 }
 
 export interface StudioState {

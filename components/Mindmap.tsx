@@ -1,12 +1,90 @@
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MindmapNode } from '../types';
+import mermaid from 'mermaid';
 
 interface MindmapProps {
   data: MindmapNode;
 }
 
 const Mindmap: React.FC<MindmapProps> = ({ data }) => {
+  const [useMermaid, setUseMermaid] = useState(false);
+  const mermaidRef = useRef<HTMLDivElement>(null);
+  const [mermaidSvg, setMermaidSvg] = useState<string>('');
+
+  useEffect(() => {
+    mermaid.initialize({ 
+      startOnLoad: false, 
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#404040',
+        primaryTextColor: '#fff',
+        primaryBorderColor: '#737373',
+        lineColor: '#737373',
+        secondaryColor: '#525252',
+        tertiaryColor: '#262626',
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (useMermaid && data) {
+      renderMermaidMindmap();
+    }
+  }, [useMermaid, data]);
+
+  const convertToMermaidSyntax = (node: MindmapNode, isRoot = true): string => {
+    let syntax = '';
+    
+    if (isRoot) {
+      syntax = `mindmap\n  root((${node.label}))\n`;
+      if (node.children) {
+        node.children.forEach(child => {
+          syntax += `    ${child.label}\n`;
+          if (child.children) {
+            child.children.forEach(subChild => {
+              syntax += `      ${subChild.label}\n`;
+            });
+          }
+        });
+      }
+    }
+    
+    return syntax;
+  };
+
+  const renderMermaidMindmap = async () => {
+    const mermaidSyntax = convertToMermaidSyntax(data);
+    
+    try {
+      const { svg } = await mermaid.render('mindmap-diagram', mermaidSyntax);
+      setMermaidSvg(svg);
+      if (mermaidRef.current) {
+        mermaidRef.current.innerHTML = svg;
+      }
+    } catch (error) {
+      console.error('Mermaid mindmap rendering error:', error);
+      setUseMermaid(false);
+    }
+  };
+
+  const exportAsSvg = () => {
+    if (!mermaidSvg) {
+      alert('Please render the Mermaid diagram first!');
+      return;
+    }
+
+    const blob = new Blob([mermaidSvg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'mindmap.svg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const renderNode = (node: MindmapNode, depth = 0, index = 0) => {
     return (
       <div key={node.id} className="flex flex-col items-center">
@@ -43,10 +121,35 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
   };
 
   return (
-    <div className="p-16 w-full min-h-[700px] flex items-center justify-center overflow-x-auto bg-neutral-50 dark:bg-neutral-800/20 rounded-[3rem] border-2 border-dashed border-neutral-200 dark:border-neutral-700">
-      <div className="min-w-max flex flex-col items-center p-8">
-        {renderNode(data)}
+    <div className="p-16 w-full min-h-[700px] bg-neutral-50 dark:bg-neutral-800/20 rounded-[3rem] border-2 border-dashed border-neutral-200 dark:border-neutral-700">
+      <div className="flex justify-end gap-2 mb-4">
+        <button
+          onClick={() => setUseMermaid(!useMermaid)}
+          className="px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all border-2 border-neutral-600 hover:border-orange-500 bg-neutral-600 text-white"
+        >
+          {useMermaid ? 'Tree View' : 'Mermaid View'}
+        </button>
+        {useMermaid && (
+          <button
+            onClick={exportAsSvg}
+            className="px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all border-2 border-transparent hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)] bg-neutral-600 text-white"
+          >
+            Export SVG
+          </button>
+        )}
       </div>
+      
+      {useMermaid ? (
+        <div className="flex items-center justify-center overflow-x-auto">
+          <div ref={mermaidRef} className="mermaid-container" />
+        </div>
+      ) : (
+        <div className="flex items-center justify-center overflow-x-auto">
+          <div className="min-w-max flex flex-col items-center p-8">
+            {renderNode(data)}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
