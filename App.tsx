@@ -527,7 +527,7 @@ const App: React.FC = () => {
                 style={state.sqlConfig.active ? {
                   color: 'var(--success)',
                   backgroundColor: 'var(--bg-tertiary)',
-                  borderColor: '#0d5028'
+                  borderColor: 'var(--success-border-dark)'
                 } : {
                   color: 'var(--text-tertiary)'
                 }}
