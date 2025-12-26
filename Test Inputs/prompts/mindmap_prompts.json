@@ -1,0 +1,26 @@
+{
+  "description": "Test prompts for Mindmap generation at different complexity levels",
+  "category": "mindmap",
+  "prompts": {
+    "simple": [
+      "Create a basic mindmap of the main topics",
+      "Generate a simple concept map showing key relationships",
+      "Map out the primary ideas in a hierarchical structure"
+    ],
+    "standard": [
+      "Generate a comprehensive mindmap showing relationships, subconcepts, and connections",
+      "Create a detailed concept map with multiple levels and clear organization",
+      "Develop a structured mindmap capturing main themes and their relationships"
+    ],
+    "detailed": [
+      "Generate an extensive mindmap with multiple levels, detailed subconcepts, and rich connections",
+      "Create an in-depth concept map showing complex relationships, dependencies, and hierarchies",
+      "Produce a sophisticated mindmap with comprehensive coverage of all concepts and their interrelationships"
+    ],
+    "comprehensive": [
+      "Generate a complete mindmap with exhaustive concept coverage, multi-level hierarchies, and detailed annotations",
+      "Create a full-featured concept map with extensive branching, rich metadata, and comprehensive relationship mapping",
+      "Develop a premium mindmap with complete knowledge structure, detailed explanations, and professional visualization"
+    ]
+  }
+}
