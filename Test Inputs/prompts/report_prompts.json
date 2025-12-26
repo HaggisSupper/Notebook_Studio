@@ -1,0 +1,26 @@
+{
+  "description": "Test prompts for Report generation at different complexity levels",
+  "category": "report",
+  "prompts": {
+    "simple": [
+      "Generate a brief report summarizing the key points from the provided sources",
+      "Create a short overview of the main findings",
+      "Provide a concise summary of the data"
+    ],
+    "standard": [
+      "Generate a comprehensive report analyzing the data and providing insights",
+      "Create a detailed analysis with supporting evidence from all sources",
+      "Develop a well-structured report covering the main topics with clear sections"
+    ],
+    "detailed": [
+      "Generate an in-depth report with extensive analysis, examples, and recommendations",
+      "Create a thorough examination including methodology, findings, and implications",
+      "Produce a detailed analytical report with multiple perspectives and supporting data"
+    ],
+    "comprehensive": [
+      "Generate an exhaustive report covering all aspects with detailed analysis, multiple perspectives, and actionable recommendations",
+      "Create a complete analytical document with background, methodology, findings, discussion, conclusions, and future directions",
+      "Develop a fully comprehensive report with executive summary, detailed analysis, case studies, and strategic recommendations"
+    ]
+  }
+}

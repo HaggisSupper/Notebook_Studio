@@ -1,0 +1,21 @@
+Date,Product,Category,Sales_Quantity,Revenue,Cost,Profit,Region,Sales_Rep
+2024-01-15,Widget A,Electronics,45,13500,9000,4500,North,John Smith
+2024-01-15,Widget B,Electronics,32,9600,6400,3200,South,Jane Doe
+2024-01-16,Gadget X,Home Appliances,28,7000,4200,2800,East,Bob Johnson
+2024-01-16,Tool Y,Industrial,15,4500,3000,1500,West,Alice Williams
+2024-01-17,Widget A,Electronics,52,15600,10400,5200,North,John Smith
+2024-01-17,Device Z,Electronics,38,11400,7600,3800,East,Bob Johnson
+2024-01-18,Gadget X,Home Appliances,41,10250,6150,4100,South,Jane Doe
+2024-01-18,Tool Y,Industrial,19,5700,3800,1900,West,Alice Williams
+2024-01-19,Widget B,Electronics,48,14400,9600,4800,North,John Smith
+2024-01-19,Appliance K,Home Appliances,35,8750,5250,3500,East,Bob Johnson
+2024-01-20,Widget A,Electronics,61,18300,12200,6100,South,Jane Doe
+2024-01-20,Device Z,Electronics,44,13200,8800,4400,West,Alice Williams
+2024-01-21,Gadget X,Home Appliances,37,9250,5550,3700,North,John Smith
+2024-01-21,Tool Y,Industrial,22,6600,4400,2200,East,Bob Johnson
+2024-01-22,Widget B,Electronics,55,16500,11000,5500,South,Jane Doe
+2024-01-22,Appliance K,Home Appliances,43,10750,6450,4300,West,Alice Williams
+2024-01-23,Widget A,Electronics,58,17400,11600,5800,North,John Smith
+2024-01-23,Device Z,Electronics,41,12300,8200,4100,East,Bob Johnson
+2024-01-24,Gadget X,Home Appliances,46,11500,6900,4600,South,Jane Doe
+2024-01-24,Tool Y,Industrial,25,7500,5000,2500,West,Alice Williams

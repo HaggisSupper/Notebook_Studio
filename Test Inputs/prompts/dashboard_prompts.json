@@ -1,0 +1,26 @@
+{
+  "description": "Test prompts for Dashboard generation at different complexity levels",
+  "category": "dashboard",
+  "prompts": {
+    "simple": [
+      "Create a simple dashboard showing key metrics",
+      "Generate basic visualizations for the data",
+      "Display the main KPIs in a dashboard format"
+    ],
+    "standard": [
+      "Generate a comprehensive dashboard with multiple chart types and key insights",
+      "Create a dashboard showing trends, comparisons, and important metrics",
+      "Develop a balanced dashboard with visualizations and summary statistics"
+    ],
+    "detailed": [
+      "Generate a detailed dashboard with extensive visualizations, drill-down metrics, and analytical insights",
+      "Create an in-depth dashboard showing correlations, patterns, and detailed breakdowns",
+      "Produce a sophisticated dashboard with multiple views and comprehensive data analysis"
+    ],
+    "comprehensive": [
+      "Generate an executive dashboard with complete data analysis, predictive insights, and strategic recommendations",
+      "Create a full-featured dashboard with real-time metrics, historical trends, forecasts, and actionable intelligence",
+      "Develop a comprehensive analytical dashboard with multi-dimensional analysis and business intelligence"
+    ]
+  }
+}

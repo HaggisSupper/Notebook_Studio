@@ -1,0 +1,28 @@
+{
+  "description": "Test prompts for Chat interactions",
+  "category": "chat",
+  "prompts": {
+    "general": [
+      "What are the main topics covered in the sources?",
+      "Can you summarize the key findings?",
+      "What patterns or trends do you see in the data?"
+    ],
+    "sql_queries": [
+      "Show me the total sales by region",
+      "Which customers have the highest order values?",
+      "Calculate the average revenue per product category",
+      "List all orders from the last quarter"
+    ],
+    "data_analysis": [
+      "What correlations exist in the data?",
+      "Identify any outliers or anomalies",
+      "Compare the performance across different segments",
+      "What insights can you derive from this data?"
+    ],
+    "multimodal": [
+      "Describe what you see in the uploaded image",
+      "Analyze the visual data and relate it to the text sources",
+      "What additional context does this image provide?"
+    ]
+  }
+}
