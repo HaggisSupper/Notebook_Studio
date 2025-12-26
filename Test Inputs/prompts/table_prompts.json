@@ -1,0 +1,26 @@
+{
+  "description": "Test prompts for Table generation at different complexity levels",
+  "category": "table",
+  "prompts": {
+    "simple": [
+      "Create a basic table showing the main data points",
+      "Generate a simple data table from the sources",
+      "Display the key information in table format"
+    ],
+    "standard": [
+      "Generate a well-structured table with relevant columns and calculated fields",
+      "Create a comprehensive data table with proper formatting and summary rows",
+      "Develop a table showing relationships between data points with totals"
+    ],
+    "detailed": [
+      "Generate a detailed table with multiple dimensions, calculated columns, and statistical summaries",
+      "Create an analytical table with aggregations, groupings, and derived metrics",
+      "Produce a sophisticated table with joins, calculations, and comprehensive data presentation"
+    ],
+    "comprehensive": [
+      "Generate a complete data table with multi-level aggregations, complex calculations, and analytical insights",
+      "Create a fully detailed table with SQL-style joins, advanced calculations, and complete documentation of transformations",
+      "Develop an exhaustive table showing all data relationships, calculated fields, and comprehensive analysis"
+    ]
+  }
+}

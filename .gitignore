@@ -27,3 +27,41 @@ dist-ssr
 coverage
 test_output*.txt
 .kilocode
+
+# Test Outputs - Keep structure, ignore generated content
+Test Outputs/reports/*
+!Test Outputs/reports/.gitkeep
+Test Outputs/dashboards/*
+!Test Outputs/dashboards/.gitkeep
+Test Outputs/infographics/*
+!Test Outputs/infographics/.gitkeep
+Test Outputs/mindmaps/*
+!Test Outputs/mindmaps/.gitkeep
+Test Outputs/flashcards/*
+!Test Outputs/flashcards/.gitkeep
+Test Outputs/slides/*
+!Test Outputs/slides/.gitkeep
+Test Outputs/tables/*
+!Test Outputs/tables/.gitkeep
+Test Outputs/canvas/*
+!Test Outputs/canvas/.gitkeep
+Test Outputs/chat_logs/*
+!Test Outputs/chat_logs/.gitkeep
+Test Outputs/sql_transforms/*
+!Test Outputs/sql_transforms/.gitkeep
+
+# Screenshots - Keep structure, ignore images
+Test Outputs/Screenshots/navigation/*
+!Test Outputs/Screenshots/navigation/.gitkeep
+Test Outputs/Screenshots/modals/*
+!Test Outputs/Screenshots/modals/.gitkeep
+Test Outputs/Screenshots/views/*
+!Test Outputs/Screenshots/views/.gitkeep
+Test Outputs/Screenshots/interactions/*
+!Test Outputs/Screenshots/interactions/.gitkeep
+Test Outputs/Screenshots/responsive/*
+!Test Outputs/Screenshots/responsive/.gitkeep
+
+# Test Reports - Keep actual reports, ignore temporary files
+Test Reports/*.tmp
+Test Reports/*.draft

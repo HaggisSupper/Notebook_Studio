@@ -1,0 +1,13 @@
+{
+  "testSuite": "Notebook Studio Comprehensive Test Plan v1.0",
+  "version": "1.0",
+  "createdDate": "2024-12-26T00:00:00Z",
+  "description": "This log file tracks all test inputs, prompts, and execution parameters for Notebook Studio testing.",
+  "environment": {
+    "nodeVersion": "",
+    "npmVersion": "",
+    "os": "",
+    "browser": ""
+  },
+  "testRuns": []
+}
