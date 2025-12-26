@@ -1,0 +1,26 @@
+{
+  "description": "Test prompts for Slides/Presentation generation at different complexity levels",
+  "category": "slides",
+  "prompts": {
+    "simple": [
+      "Create a basic presentation outline with key points",
+      "Generate simple slides covering the main topics",
+      "Make a straightforward slide deck with essential information"
+    ],
+    "standard": [
+      "Generate a comprehensive presentation with well-structured slides, talking points, and visual suggestions",
+      "Create a balanced slide deck with multiple sections, clear messaging, and supporting details",
+      "Develop a professional presentation with organized content and speaker notes"
+    ],
+    "detailed": [
+      "Generate an extensive presentation with detailed slides, comprehensive speaker notes, visual design recommendations, and transition suggestions",
+      "Create an in-depth slide deck with multiple narrative threads, rich content, and detailed delivery guidance",
+      "Produce a sophisticated presentation with layered information, supporting data, and professional design specifications"
+    ],
+    "comprehensive": [
+      "Generate an exhaustive presentation with complete topic coverage, detailed speaker notes, visual design specifications, timing recommendations, and audience engagement strategies",
+      "Create a full-featured slide deck with comprehensive narrative, extensive supporting materials, professional design guidelines, and delivery best practices",
+      "Develop a premium presentation with publication-ready slides, complete presenter guide, audience handouts, and strategic communication framework"
+    ]
+  }
+}

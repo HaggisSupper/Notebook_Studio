@@ -1,0 +1,26 @@
+{
+  "description": "Test prompts for Flashcards generation at different complexity levels",
+  "category": "flashcards",
+  "prompts": {
+    "simple": [
+      "Create basic flashcards covering the main points",
+      "Generate simple question-answer flashcards",
+      "Make flashcards for the key concepts"
+    ],
+    "standard": [
+      "Generate comprehensive flashcards with varied question types and detailed answers",
+      "Create a balanced set of flashcards covering all major topics with explanations",
+      "Develop well-structured flashcards with progressive difficulty"
+    ],
+    "detailed": [
+      "Generate extensive flashcards with complex questions, detailed explanations, and contextual information",
+      "Create an in-depth flashcard set with multiple question formats and comprehensive answers",
+      "Produce sophisticated flashcards with layered information and advanced concepts"
+    ],
+    "comprehensive": [
+      "Generate an exhaustive flashcard set with complete topic coverage, varied question types, detailed explanations, and learning tips",
+      "Create a full-featured flashcard collection with progressive learning paths, comprehensive answers, and study recommendations",
+      "Develop premium flashcards with complete knowledge coverage, spaced repetition suggestions, and mastery indicators"
+    ]
+  }
+}

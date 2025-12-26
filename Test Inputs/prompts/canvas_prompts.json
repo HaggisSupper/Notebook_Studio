@@ -1,0 +1,36 @@
+{
+  "description": "Test prompts for Canvas (Markdown and Mermaid) at different scenarios",
+  "category": "canvas",
+  "prompts": {
+    "markdown": [
+      "Create a markdown document with headers, lists, and code blocks",
+      "Write a technical documentation in markdown format",
+      "Generate a README file with installation and usage instructions",
+      "Create a markdown-formatted article with images and links"
+    ],
+    "mermaid_flowchart": [
+      "Create a flowchart showing the user authentication process",
+      "Generate a process flow diagram for order fulfillment",
+      "Design a flowchart for error handling logic",
+      "Create a decision tree flowchart"
+    ],
+    "mermaid_sequence": [
+      "Create a sequence diagram for API request-response flow",
+      "Generate a sequence diagram showing database transactions",
+      "Design a sequence diagram for user login process",
+      "Create a sequence diagram for microservices communication"
+    ],
+    "mermaid_class": [
+      "Create a class diagram for an e-commerce system",
+      "Generate a class diagram showing inheritance relationships",
+      "Design a class diagram for a blog application",
+      "Create an entity-relationship class diagram"
+    ],
+    "mermaid_mindmap": [
+      "Create a mindmap for project planning",
+      "Generate a mindmap showing technology stack choices",
+      "Design a mindmap for learning path",
+      "Create a mindmap for brainstorming session"
+    ]
+  }
+}

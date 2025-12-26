@@ -1,0 +1,26 @@
+{
+  "description": "Test prompts for Infographic generation at different complexity levels",
+  "category": "infographic",
+  "prompts": {
+    "simple": [
+      "Create a simple infographic showing key data points",
+      "Generate a basic visual representation of the information",
+      "Design a straightforward infographic with main highlights"
+    ],
+    "standard": [
+      "Generate an infographic with multiple visual elements, data points, and clear structure",
+      "Create a comprehensive visual presentation with charts, icons, and key insights",
+      "Develop a well-designed infographic balancing data visualization and narrative"
+    ],
+    "detailed": [
+      "Generate a detailed infographic with extensive data visualizations, annotations, and storytelling elements",
+      "Create an in-depth visual narrative with multiple sections, detailed charts, and comprehensive information",
+      "Produce a sophisticated infographic with data-driven insights and professional design recommendations"
+    ],
+    "comprehensive": [
+      "Generate an exhaustive infographic with complete data analysis, multiple visualization types, detailed annotations, and professional layout recommendations",
+      "Create a full-featured infographic with comprehensive visual storytelling, extensive data points, and strategic design elements",
+      "Develop a premium infographic with advanced visualizations, complete narrative arc, and publication-ready design specifications"
+    ]
+  }
+}
