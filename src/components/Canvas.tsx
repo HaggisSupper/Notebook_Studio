@@ -37,17 +37,54 @@ const Canvas: React.FC<CanvasProps> = ({ initialContent = '' }) => {
   }, [content, mode, isEditing]);
 
   const renderMermaid = async () => {
+    if (!content.trim()) {
+      if (mermaidRef.current) {
+        mermaidRef.current.innerHTML = `<div class="text-neutral-400 font-mono text-sm p-4">Enter Mermaid diagram syntax in edit mode</div>`;
+      }
+      return;
+    }
+
     try {
+      // Validate basic Mermaid syntax before attempting render
+      const firstLine = content.trim().split('\n')[0].toLowerCase();
+      const validDiagramTypes = [
+        'graph', 'flowchart', 'sequencediagram', 'classDiagram', 'stateDiagram',
+        'erdiagram', 'journey', 'gantt', 'pie', 'mindmap', 'timeline', 'gitgraph',
+        'c4context', 'quadrantchart', 'xychart', 'block', 'architecture'
+      ];
+      
+      const hasValidType = validDiagramTypes.some(type => firstLine.includes(type));
+      if (!hasValidType) {
+        throw new Error('Invalid diagram type. Must start with a valid Mermaid diagram declaration (e.g., "graph TD", "sequenceDiagram", etc.)');
+      }
+
       const { svg } = await mermaid.render('mermaid-diagram', content);
       setMermaidSvg(svg);
       if (mermaidRef.current) {
         mermaidRef.current.innerHTML = svg;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Mermaid rendering error:', error);
       setMermaidSvg('');
+      
+      // Provide helpful error message
+      const errorMessage = error.message || String(error);
+      const helpText = `
+        <div class="text-red-400 font-mono text-xs p-4 bg-neutral-800 rounded">
+          <div class="font-bold mb-2">⚠️ Mermaid Syntax Error</div>
+          <div class="mb-2">${errorMessage}</div>
+          <div class="text-neutral-400 text-[10px] mt-3">
+            <strong>Common issues:</strong><br/>
+            • Diagram must start with a valid type (graph, flowchart, sequenceDiagram, etc.)<br/>
+            • Check for unmatched brackets or quotes<br/>
+            • Verify node IDs don't contain special characters<br/>
+            • Ensure proper indentation and syntax
+          </div>
+        </div>
+      `;
+      
       if (mermaidRef.current) {
-        mermaidRef.current.innerHTML = `<div class="text-red-400 font-mono text-sm p-4">Error rendering diagram: ${error}</div>`;
+        mermaidRef.current.innerHTML = helpText;
       }
     }
   };
