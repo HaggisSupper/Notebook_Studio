@@ -10,11 +10,8 @@ const coreAssets = [
   '/manifest.json'
 ];
 
-// Assets that should be cached but not critical
-const staticAssets = [
-  '/src/index.tsx',
-  '/src/App.tsx'
-];
+// Static assets will be cached dynamically during runtime
+// as they have hash-based names that change with each build
 
 // Install event - cache core assets
 self.addEventListener('install', event => {
@@ -25,14 +22,6 @@ self.addEventListener('install', event => {
         const cache = await caches.open(CACHE_NAME);
         console.log('[ServiceWorker] Caching core assets');
         await cache.addAll(coreAssets);
-        
-        // Try to cache static assets, but don't fail if they're not available
-        try {
-          const staticCache = await caches.open(STATIC_CACHE);
-          await staticCache.addAll(staticAssets);
-        } catch (error) {
-          console.warn('[ServiceWorker] Failed to cache some static assets:', error);
-        }
         
         // Skip waiting to activate immediately
         self.skipWaiting();

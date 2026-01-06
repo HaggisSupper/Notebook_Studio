@@ -8,6 +8,13 @@ interface CanvasProps {
   initialContent?: string;
 }
 
+// Valid Mermaid diagram types
+const VALID_MERMAID_TYPES = [
+  'graph', 'flowchart', 'sequencediagram', 'classdiagram', 'statediagram',
+  'erdiagram', 'journey', 'gantt', 'pie', 'mindmap', 'timeline', 'gitgraph',
+  'c4context', 'quadrantchart', 'xychart', 'block', 'architecture'
+];
+
 const Canvas: React.FC<CanvasProps> = ({ initialContent = '' }) => {
   const [content, setContent] = useState(initialContent);
   const [mode, setMode] = useState<'markdown' | 'mermaid'>('markdown');
@@ -47,13 +54,8 @@ const Canvas: React.FC<CanvasProps> = ({ initialContent = '' }) => {
     try {
       // Validate basic Mermaid syntax before attempting render
       const firstLine = content.trim().split('\n')[0].toLowerCase();
-      const validDiagramTypes = [
-        'graph', 'flowchart', 'sequencediagram', 'classDiagram', 'stateDiagram',
-        'erdiagram', 'journey', 'gantt', 'pie', 'mindmap', 'timeline', 'gitgraph',
-        'c4context', 'quadrantchart', 'xychart', 'block', 'architecture'
-      ];
       
-      const hasValidType = validDiagramTypes.some(type => firstLine.includes(type));
+      const hasValidType = VALID_MERMAID_TYPES.some(type => firstLine.includes(type));
       if (!hasValidType) {
         throw new Error('Invalid diagram type. Must start with a valid Mermaid diagram declaration (e.g., "graph TD", "sequenceDiagram", etc.)');
       }

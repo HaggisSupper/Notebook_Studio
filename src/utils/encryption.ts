@@ -1,7 +1,11 @@
 import CryptoJS from 'crypto-js';
 
 // Generate a unique encryption key for this browser session
-// In a real production app, this should be derived from a user password or secure source
+// NOTE: This key is stored in localStorage. If localStorage is cleared,
+// encrypted data becomes unrecoverable. For production use, consider:
+// - Deriving key from user password
+// - Implementing a backup/recovery mechanism
+// - Using browser's SubtleCrypto API with non-extractable keys
 const getEncryptionKey = (): string => {
   let key = localStorage.getItem('__app_encryption_key');
   if (!key) {
