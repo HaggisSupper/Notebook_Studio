@@ -27,14 +27,36 @@ delete (window as any).location;
   reload: vi.fn(),
 };
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-global.localStorage = localStorageMock as any;
+// Create a proper localStorage implementation for tests
+class LocalStorageMock {
+  private store: Map<string, string> = new Map();
+
+  getItem(key: string): string | null {
+    return this.store.get(key) || null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.store.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.store.delete(key);
+  }
+
+  clear(): void {
+    this.store.clear();
+  }
+
+  get length(): number {
+    return this.store.size;
+  }
+
+  key(index: number): string | null {
+    return Array.from(this.store.keys())[index] || null;
+  }
+}
+
+global.localStorage = new LocalStorageMock() as any;
 
 // Mock fetch for API calls
 global.fetch = vi.fn();

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { LLMSettings } from '../types';
+import { storeApiKey } from '../utils/encryption';
 
 interface SettingsModalProps {
   settings: LLMSettings;
@@ -10,6 +11,18 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose }) => {
   const [localSettings, setLocalSettings] = useState<LLMSettings>(settings);
+  
+  const handleSave = () => {
+    // Store API keys securely in localStorage with encryption
+    if (localSettings.apiKey) {
+      storeApiKey(`${localSettings.provider}_api_key`, localSettings.apiKey);
+    }
+    if (localSettings.searchConfig?.apiKey) {
+      storeApiKey('search_api_key', localSettings.searchConfig.apiKey);
+    }
+    
+    onSave(localSettings);
+  };
 
   return (
     <div className="fixed inset-0 bg-neutral-700/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -92,7 +105,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose
                         </select>
                      </div>
                      <div>
-                        <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Search API Key</label>
+                        <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">
+                          Search API Key
+                          <span className="ml-2 text-orange-500">🔒</span>
+                        </label>
                         <input 
                            type="password" 
                            value={localSettings.searchConfig.apiKey || ''} 
@@ -120,7 +136,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose
         
         <div className="p-8 border-t border-neutral-500 shrink-0">
              <button 
-               onClick={() => onSave(localSettings)}
+               onClick={handleSave}
                className="w-full bg-white hover:bg-neutral-200 text-black font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs border-2 border-transparent focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
              >
                Save System Configuration

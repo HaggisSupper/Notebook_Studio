@@ -12,6 +12,7 @@ import SettingsModal from './components/SettingsModal';
 import Canvas from './components/Canvas';
 import { generateStudioContent, performDeepResearch } from './services/llmService';
 import * as sqlService from './services/sqlService';
+import { getApiKey } from './utils/encryption';
 
 const INITIAL_PAGE: Page = {
   id: 'pg-1',
@@ -79,6 +80,27 @@ const App: React.FC = () => {
   // Derived state
   const activeNotebook = state.notebooks.find(n => n.id === state.activeNotebookId) || state.notebooks[0];
   const activePage = activeNotebook?.pages.find(p => p.id === state.activePageId) || activeNotebook?.pages[0];
+
+  // Load API keys from encrypted localStorage on startup
+  useEffect(() => {
+    const loadedProvider = state.settings.provider;
+    const loadedApiKey = getApiKey(`${loadedProvider}_api_key`) || process.env.API_KEY || process.env.GEMINI_API_KEY || '';
+    const loadedSearchApiKey = getApiKey('search_api_key') || '';
+    
+    if (loadedApiKey || loadedSearchApiKey) {
+      setState(prev => ({
+        ...prev,
+        settings: {
+          ...prev.settings,
+          apiKey: loadedApiKey,
+          searchConfig: {
+            ...prev.settings.searchConfig,
+            apiKey: loadedSearchApiKey
+          }
+        }
+      }));
+    }
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

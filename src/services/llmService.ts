@@ -300,11 +300,12 @@ export const generateStudioContent = async (
   };
 
   if (settings.provider === 'google') {
-    if (!process.env.API_KEY) {
-      throw new Error("Missing Google API Key. Please set GEMINI_API_KEY in your .env file or configure environment.");
+    const apiKey = settings.apiKey || process.env.API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("No API key provided. Please configure your API key in Settings.");
     }
     
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     
     try {
       const response = await ai.models.generateContent({
@@ -458,11 +459,12 @@ export const performDeepResearch = async (
     // --- 1. Provider Adapter ---
 
     if (settings.provider === 'google') {
-      if (!process.env.API_KEY) {
-        throw new Error("Google API key is not configured for deep research");
+      const apiKey = settings.apiKey || process.env.API_KEY || process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("No API key provided. Please configure your API key in Settings.");
       }
       
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       // Use Flash 2.0 for Agents
       const modelName = settings.model.includes('gemini') ? settings.model : 'gemini-2.0-flash-exp';
       
