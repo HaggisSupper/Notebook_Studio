@@ -9,6 +9,7 @@ export default mergeConfig(
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        'voy-search': path.resolve(__dirname, 'src/test/mocks/voy-search.ts'),
       },
     },
   }),

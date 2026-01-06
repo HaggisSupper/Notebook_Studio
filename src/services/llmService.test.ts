@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateStudioContent } from './llmService';
 import { Source, LLMSettings } from '../types';
 
+// Mock RAG vectorStore
+vi.mock('./rag/vectorStore', () => ({
+  vectorStore: {
+    search: vi.fn(() => Promise.resolve([])),
+    addDocument: vi.fn(() => Promise.resolve()),
+    clear: vi.fn(),
+    init: vi.fn(() => Promise.resolve()),
+  },
+}));
+
 describe('llmService', () => {
   let mockSettings: LLMSettings;
   let mockSources: Source[];
