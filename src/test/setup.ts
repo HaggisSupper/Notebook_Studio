@@ -1,5 +1,6 @@
 import { expect, afterEach, vi, beforeAll, afterAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
 
 // Cleanup after each test
 afterEach(() => {
@@ -57,6 +58,9 @@ class LocalStorageMock {
 }
 
 global.localStorage = new LocalStorageMock() as any;
+
+// Mock scrollIntoView for refs
+Element.prototype.scrollIntoView = vi.fn();
 
 // Mock fetch for API calls
 global.fetch = vi.fn();

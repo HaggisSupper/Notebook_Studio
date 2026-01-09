@@ -9,7 +9,7 @@ interface CanvasProps {
 }
 
 // Valid Mermaid diagram types
-const VALID_MERMAID_TYPES = [
+export const VALID_MERMAID_TYPES = [
   'graph', 'flowchart', 'sequencediagram', 'classdiagram', 'statediagram',
   'erdiagram', 'journey', 'gantt', 'pie', 'mindmap', 'timeline', 'gitgraph',
   'c4context', 'quadrantchart', 'xychart', 'block', 'architecture'
