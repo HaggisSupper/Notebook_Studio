@@ -43,11 +43,12 @@ describe('toolService', () => {
     it('should execute search_web with simulated results', async () => {
       const result = await executeTool('search_web', { query: 'test' }, baseSettings);
       
-      expect(result).toContain('Simulated Result');
+      expect(result).toContain('[SIMULATED]');
     });
 
     it('should execute search_web with Tavily API when key provided', async () => {
       mockFetch.mockResolvedValueOnce({
+        ok: true,
         json: () => Promise.resolve({ results: [{ title: 'Real result' }] })
       });
 
@@ -63,6 +64,7 @@ describe('toolService', () => {
 
     it('should execute fetch_page_content', async () => {
       mockFetch.mockResolvedValueOnce({
+        ok: true,
         text: () => Promise.resolve('<html><body>Page content</body></html>')
       });
 
@@ -106,7 +108,8 @@ describe('toolService', () => {
       const tools = await getGeminiTools(settingsWithMcp);
       
       // Should have static tools + MCP tools
-      const mcpTool = tools[0].functionDeclarations.find(t => t.name === 'mcp_tool');
+      const declarationBlock = tools[0].functionDeclarations;
+      const mcpTool = declarationBlock.find(t => t.name === 'mcp_tool');
       expect(mcpTool).toBeDefined();
     });
   });

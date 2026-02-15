@@ -40,6 +40,9 @@ export const TOOL_DEFINITIONS = [
   }
 ];
 
+// --- Simple Cache for MCP Tools ---
+const mcpToolCache: Record<string, McpTool[]> = {};
+
 // --- Tool Implementation ---
 
 const executeSearch = async (query: string, apiKey?: string): Promise<string> => {
@@ -48,7 +51,7 @@ const executeSearch = async (query: string, apiKey?: string): Promise<string> =>
     console.warn("No Search API Key provided. Using simulated results.");
     return JSON.stringify({
       results: [
-        { title: `Simulated Result for ${query}`, url: "https://example.com/simulated", content: `This is a simulated search result for the query: ${query}. In a real environment with a Tavily API key, this would contain real web data.` },
+        { title: `[SIMULATED] Search Result for ${query}`, url: "https://example.com/simulated", content: `(NOTE: This is a simulated search result because no Tavily API key was provided. Please configure a search provider in settings.) Simulated content for query: ${query}.` },
         { title: "Deep Research Methodologies", url: "https://research.org/methods", content: "Deep research involves iterative search steps, synthesis of multiple sources, and cross-verification of facts." }
       ]
     });
@@ -66,6 +69,11 @@ const executeSearch = async (query: string, apiKey?: string): Promise<string> =>
         max_results: 5
       }),
     });
+
+    if (!response.ok) {
+        throw new Error(`Search API error: ${response.status} ${response.statusText}`);
+    }
+
     const data = await response.json();
     return JSON.stringify(data);
   } catch (error: any) {
@@ -75,15 +83,22 @@ const executeSearch = async (query: string, apiKey?: string): Promise<string> =>
 
 const executeFetchPage = async (url: string): Promise<string> => {
   // Client-side fetch often fails due to CORS. 
-  // We recommend using a proxy or a service like Tavily 'extract' if available.
-  // For this demo, we simulate a fetch or try a direct fetch.
   try {
     const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+    }
     const text = await response.text();
     // basic HTML strip
-    return text.replace(/<[^>]*>?/gm, '').substring(0, 2000) + "... (truncated)";
-  } catch (e) {
-    return `Failed to fetch page content directly due to browser CORS restrictions. Please rely on the search snippets provided in the 'search_web' tool output.`;
+    return text.replace(/<[^>]*>?/gm, '').substring(0, 3000) + "... (truncated)";
+  } catch (e: any) {
+    const isCors = e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'));
+    if (isCors) {
+        return `Error: Unable to fetch page content directly due to browser CORS restrictions (Cross-Origin Resource Sharing).
+        The server at ${url} does not allow this application to read its content.
+        Please rely on the snippets provided in the search results or use a CORS-enabled proxy if configured.`;
+    }
+    return `Error fetching page: ${e.message}`;
   }
 };
 
@@ -100,12 +115,22 @@ export const executeTool = async (name: string, args: any, settings: LLMSettings
     return await executeFetchPage(args.url);
   }
 
-  // Fallback to MCP tools
+  // Fallback to MCP tools with Caching
   if (settings.mcpServers && settings.mcpServers.length > 0) {
     for (const url of settings.mcpServers) {
-      // Check if this tool belongs to this server (simple check by listing again or we could cache)
-      const tools = await fetchToolsFromMcp(url);
-      if (tools.find(t => t.name === name)) {
+      // Check cache first
+      let tools = mcpToolCache[url];
+      if (!tools) {
+          try {
+              tools = await fetchToolsFromMcp(url);
+              mcpToolCache[url] = tools;
+          } catch (err) {
+              console.warn(`Failed to fetch tools from MCP ${url}`, err);
+              continue;
+          }
+      }
+
+      if (tools && tools.find(t => t.name === name)) {
         return await callMcpTool(url, name, args);
       }
     }
@@ -148,6 +173,11 @@ const mapSchema = (schema: any): Schema => {
     mapped.required = schema.required;
   }
   
+  // Handle Array items
+  if (schema.type === 'array' && schema.items) {
+      mapped.items = mapSchema(schema.items);
+  }
+
   return mapped;
 };
 
@@ -162,14 +192,25 @@ export const getGeminiTools = async (settings: LLMSettings): Promise<{ functionD
   // Add MCP Tools
   if (settings.mcpServers) {
     for (const url of settings.mcpServers) {
-      const mcpTools = await fetchToolsFromMcp(url);
-      mcpTools.forEach(tool => {
-        declarations.push({
-          name: tool.name,
-          description: tool.description,
-          parameters: mapSchema(tool.inputSchema)
-        });
-      });
+      try {
+          // Use cache if available, but for discovery we might want to refresh?
+          // Let's use cache for consistency with executeTool
+          let mcpTools = mcpToolCache[url];
+          if (!mcpTools) {
+             mcpTools = await fetchToolsFromMcp(url);
+             mcpToolCache[url] = mcpTools;
+          }
+
+          mcpTools.forEach(tool => {
+            declarations.push({
+              name: tool.name,
+              description: tool.description,
+              parameters: mapSchema(tool.inputSchema)
+            });
+          });
+      } catch (err) {
+          console.warn(`Failed to load MCP tools from ${url} during discovery`, err);
+      }
     }
   }
 

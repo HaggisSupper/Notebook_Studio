@@ -19,10 +19,9 @@ vi.mock('./toolService', async () => {
   };
 });
 
-// Use vi.hoisted to make the mock function available to the factory
-const { mockGenerateContent } = vi.hoisted(() => {
-  return { mockGenerateContent: vi.fn() };
-});
+// Define mockGenerateContent outside of hoised block to avoid circular dependency in test setup logic,
+// but we need to hoist the mock factory.
+const mockGenerateContent = vi.fn();
 
 // Hoisted mock for GoogleGenAI
 vi.mock('@google/genai', () => ({
@@ -59,6 +58,7 @@ describe('llmService', () => {
         provider: 'simulated',
       },
       apiKey: 'test-key',
+      localEnrichment: false
     };
 
     mockSources = [
@@ -72,12 +72,15 @@ describe('llmService', () => {
 
     // Mock process.env
     process.env.API_KEY = 'mock-key-for-test';
+
+    // Mock global fetch
+    global.fetch = vi.fn();
   });
 
   describe('generateStudioContent', () => {
     it('should generate report content', async () => {
       const mockResponse = {
-        text: JSON.stringify({
+        text: () => JSON.stringify({
           title: 'Test Report',
           executiveSummary: 'Summary',
           sections: [],
@@ -117,7 +120,7 @@ describe('llmService', () => {
       const sourcesWithImage = [...mockSources, imageSource];
       
       const mockResponse = {
-         text: JSON.stringify({
+         text: () => JSON.stringify({
            title: 'Test Report',
            executiveSummary: 'Summary',
            sections: [],
@@ -134,6 +137,43 @@ describe('llmService', () => {
       // Check if parts include inlineData
       const hasImage = callArgs.contents.parts.some((p: any) => p.inlineData);
       expect(hasImage).toBe(true);
+    });
+
+    it('should use local enrichment if enabled', async () => {
+      const settingsWithLocal = { ...mockSettings, localEnrichment: true };
+
+      // Mock local model response
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: 'Enriched Prompt' } }]
+        })
+      });
+
+      const mockResponse = {
+        text: () => JSON.stringify({
+          title: 'Test Report',
+          executiveSummary: 'Summary',
+          sections: [],
+          conclusion: 'Conclusion',
+        }),
+      };
+      mockGenerateContent.mockResolvedValue(mockResponse);
+
+      await generateStudioContent(mockSources, 'report', settingsWithLocal);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('localhost'), // Default or ENV
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('USER_REQUEST')
+        })
+      );
+
+      // Verify that the prompt sent to Google was the enriched one
+      const googleCallArgs = mockGenerateContent.mock.calls[0][0];
+      const lastPart = googleCallArgs.contents.parts[googleCallArgs.contents.parts.length - 1];
+      expect(lastPart.text).toContain('ENRICHED_TASK: Enriched Prompt');
     });
   });
 

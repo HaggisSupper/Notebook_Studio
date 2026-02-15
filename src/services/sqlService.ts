@@ -1,5 +1,7 @@
 
 import initSqlJs, { Database } from 'sql.js';
+// @ts-ignore
+import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 
 let db: Database | null = null;
 
@@ -9,8 +11,8 @@ let db: Database | null = null;
  */
 export const initDatabase = async (data?: ArrayBuffer): Promise<Database> => {
   const SQL = await initSqlJs({
-    // Fetch the wasm file from a CDN or local assets
-    locateFile: (file) => `https://sql.js.org/dist/${file}`
+    // Use local WASM file via Vite asset handling
+    locateFile: (file) => sqlWasmUrl
   });
   
   if (data) {
@@ -50,9 +52,16 @@ export const getSchemaContext = (): string => {
   
   tables[0].values.forEach(row => {
     const tableName = row[0] as string;
-    const columns = db!.exec(`PRAGMA table_info(${tableName});`);
-    const colList = columns[0].values.map(col => `${col[1]} (${col[2]})`).join(', ');
-    context += `- TABLE: ${tableName} (COLUMNS: ${colList})\n`;
+    // Safely get column info
+    try {
+        const columns = db!.exec(`PRAGMA table_info("${tableName}");`);
+        if (columns.length > 0 && columns[0].values) {
+             const colList = columns[0].values.map(col => `${col[1]} (${col[2]})`).join(', ');
+             context += `- TABLE: ${tableName} (COLUMNS: ${colList})\n`;
+        }
+    } catch (e) {
+        console.warn(`Failed to get schema for table ${tableName}`, e);
+    }
   });
   
   return context;
@@ -65,16 +74,25 @@ export const importToTable = (tableName: string, data: any[]) => {
   if (!db || data.length === 0) return;
   
   const keys = Object.keys(data[0]);
-  const columns = keys.map(k => `"${k}" TEXT`).join(', ');
+  // Sanitize column names somewhat
+  const columns = keys.map(k => `"${k.replace(/"/g, '""')}" TEXT`).join(', ');
   
-  db.run(`CREATE TABLE IF NOT EXISTS "${tableName}" (${columns});`);
-  
-  const placeholders = keys.map(() => '?').join(', ');
-  const stmt = db.prepare(`INSERT INTO "${tableName}" VALUES (${placeholders})`);
-  
-  data.forEach(row => {
-    stmt.run(keys.map(k => row[k]));
-  });
-  
-  stmt.free();
+  try {
+      db.run(`CREATE TABLE IF NOT EXISTS "${tableName.replace(/"/g, '""')}" (${columns});`);
+
+      const placeholders = keys.map(() => '?').join(', ');
+      const stmt = db.prepare(`INSERT INTO "${tableName.replace(/"/g, '""')}" VALUES (${placeholders})`);
+
+      data.forEach(row => {
+        try {
+            stmt.run(keys.map(k => row[k]));
+        } catch (insertError) {
+            console.warn(`Failed to insert row into ${tableName}`, row, insertError);
+        }
+      });
+
+      stmt.free();
+  } catch (tableError) {
+      console.error(`Failed to create table ${tableName}`, tableError);
+  }
 };

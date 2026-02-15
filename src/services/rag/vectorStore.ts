@@ -7,6 +7,7 @@ class VectorStore {
   private static instance: VectorStore;
   private embedder: any = null;
   private index: any = null;
+  // Resource storage: { id: string, content: string, metadata: any, embeddings: number[] }
   private resources: Array<{ id: string; content: string; metadata: any }> = [];
   private isReady = false;
 
@@ -58,42 +59,43 @@ class VectorStore {
     
     console.log(`[VectorStore] Processing ${chunks.length} chunks for doc: ${id}`);
 
-    // 2. Embed each chunk
-    const embeddings: any[] = [];
-    
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
+    // 2. Embed chunks in parallel (with limit if needed, but for now Promise.all is fine for browser chunks)
+    const embeddingPromises = chunks.map(async (chunk, i) => {
       const vector = await this.getEmbedding(chunk);
       
-      const resource = {
-        id: `${id}_chunk_${i}`,
+      const resourceId = `${id}_chunk_${i}`;
+      
+      // Store content reference
+      this.resources.push({
+        id: resourceId,
+        content: chunk,
+        metadata: { ...metadata, chunkIndex: i }
+      });
+
+      return {
+        id: resourceId,
         title: metadata.title || 'Untitled',
         url: `/doc/${id}`,
         embeddings: vector
       };
-      
-      embeddings.push(resource);
+    });
 
-      // Store content reference
-      this.resources.push({
-        id: resource.id,
-        content: chunk,
-        metadata: { ...metadata, chunkIndex: i }
-      });
-    }
+    const newEmbeddings = await Promise.all(embeddingPromises);
 
     // 3. Add to Index
-    this.index.add({ embeddings });
-    console.log(`[VectorStore] Added ${embeddings.length} vectors.`);
+    if (this.index) {
+        this.index.add({ embeddings: newEmbeddings });
+    }
+    console.log(`[VectorStore] Added ${newEmbeddings.length} vectors.`);
   }
 
   public async search(query: string, limit: number = 3): Promise<Array<{ content: string; score: number; metadata: any }>> {
     if (!this.isReady) await this.init();
+    if (!this.index) return [];
 
     const queryVector = await this.getEmbedding(query);
     
-    // Voy search returns { neighbors: [ { id, title, url } ] } - wait, check docs or type
-    // Voy returns results based on the resource object structure we passed in
+    // Voy search returns { neighbors: [ { id, title, url } ] }
     const results = this.index.search(queryVector, limit);
 
     return results.neighbors.map((r: any) => {
@@ -101,7 +103,7 @@ class VectorStore {
       const original = this.resources.find(res => res.id === r.id);
       return {
         content: original ? original.content : "[Content Not Found]",
-        score: 0, // Voy might not return raw score in this version, or we assume sorted
+        score: 0, // Voy usually returns distances, but the JS wrapper might hide it in 'neighbors' depending on version
         metadata: original ? original.metadata : {}
       };
     });
@@ -117,8 +119,12 @@ class VectorStore {
     const chunks: string[] = [];
     
     for (let i = 0; i < words.length; i += (chunkSize - overlap)) {
-      const chunk = words.slice(i, i + chunkSize).join(' ');
-      chunks.push(chunk);
+      if (i > words.length) break;
+      const end = Math.min(i + chunkSize, words.length);
+      const chunk = words.slice(i, end).join(' ');
+      if (chunk.trim().length > 0) {
+          chunks.push(chunk);
+      }
     }
     
     return chunks;
