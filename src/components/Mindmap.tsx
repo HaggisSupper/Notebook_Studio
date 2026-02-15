@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { MindmapNode } from '../types';
 import mermaid from 'mermaid';
@@ -33,23 +32,27 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
     }
   }, [useMermaid, data]);
 
-  const convertToMermaidSyntax = (node: MindmapNode, isRoot = true): string => {
-    let syntax = '';
+  const convertToMermaidSyntax = (node: MindmapNode): string => {
+    if (!node || !node.label) return '';
     
-    if (isRoot) {
-      syntax = `mindmap\n  root((${node.label}))\n`;
-      if (node.children) {
-        node.children.forEach(child => {
-          syntax += `    ${child.label}\n`;
-          if (child.children) {
-            child.children.forEach(subChild => {
-              syntax += `      ${subChild.label}\n`;
-            });
-          }
-        });
+    let syntax = 'mindmap\n';
+    
+    const traverse = (n: MindmapNode, indent: number) => {
+      const indentation = ' '.repeat(indent);
+      // Escape label to prevent Mermaid syntax errors, remove parens/special chars
+      const cleanLabel = n.label.replace(/[()]/g, '').trim();
+      // Determine shape based on depth (root: circle, others: default/rounded)
+      const shapeStart = indent === 2 ? '((' : indent === 4 ? '(' : '[';
+      const shapeEnd = indent === 2 ? '))' : indent === 4 ? ')' : ']';
+
+      syntax += `${indentation}${shapeStart}${cleanLabel}${shapeEnd}\n`;
+
+      if (n.children && n.children.length > 0) {
+        n.children.forEach(child => traverse(child, indent + 2));
       }
-    }
-    
+    };
+
+    traverse(node, 2); // Root indent
     return syntax;
   };
 
@@ -64,7 +67,7 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
       }
     } catch (error) {
       console.error('Mermaid mindmap rendering error:', error);
-      setUseMermaid(false);
+      // Fallback or error indication?
     }
   };
 
@@ -85,7 +88,7 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
     URL.revokeObjectURL(url);
   };
 
-  const renderNode = (node: MindmapNode, depth = 0, index = 0) => {
+  const renderNode = (node: MindmapNode, depth = 0, index = 0, totalSiblings = 1) => {
     if (!node || !node.id || !node.label) {
       return null;
     }
@@ -93,31 +96,40 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
     return (
       <div key={node.id} className="flex flex-col items-center">
         <div className={`
-          px-8 py-4 rounded-2xl border-2 shadow-xl mb-6 transition-all hover:scale-105 uppercase tracking-tighter
+          px-8 py-4 rounded-2xl border-2 shadow-xl mb-6 transition-all hover:scale-105 uppercase tracking-tighter relative z-10
           ${depth === 0 ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-950 font-black border-neutral-900' : 'bg-white dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-bold'}
           ${depth === 1 ? 'border-neutral-400 dark:border-neutral-500' : 'border-neutral-100 dark:border-neutral-600'}
         `}>
           {node.label}
         </div>
         {node.children && node.children.length > 0 && (
-          <div className="flex gap-12 relative">
-            <div className="absolute top-[-24px] left-1/2 w-[3px] h-6 bg-neutral-300 dark:bg-neutral-600 transform -translate-x-1/2" />
+          <div className="flex gap-12 relative pt-8">
+             {/* Vertical line from parent to children container */}
+            <div className="absolute top-0 left-1/2 w-[2px] h-8 bg-neutral-300 dark:bg-neutral-600 transform -translate-x-1/2" />
+
             {node.children.map((child, idx) => {
               if (!child) return null;
+              const isFirst = idx === 0;
+              const isLast = idx === node.children!.length - 1;
+              const isOnly = node.children!.length === 1;
+
               return (
-              <div key={child.id} className="relative flex flex-col items-center pt-6">
+              <div key={child.id} className="relative flex flex-col items-center">
                 {/* Horizontal connection line */}
-                {node.children && node.children.length > 1 && idx === 0 && (
-                  <div className="absolute top-0 right-0 w-1/2 h-[3px] bg-neutral-300 dark:bg-neutral-600" />
+                {!isOnly && (
+                  <>
+                    <div className={`absolute top-0 right-0 h-[2px] bg-neutral-300 dark:bg-neutral-600 ${isFirst ? 'w-1/2' : 'w-full'} ${isLast ? 'hidden' : ''}`} />
+                    <div className={`absolute top-0 left-0 h-[2px] bg-neutral-300 dark:bg-neutral-600 ${isLast ? 'w-1/2' : 'w-full'} ${isFirst ? 'hidden' : ''}`} />
+                  </>
                 )}
-                {node.children && node.children.length > 1 && idx === node.children.length - 1 && (
-                  <div className="absolute top-0 left-0 w-1/2 h-[3px] bg-neutral-300 dark:bg-neutral-600" />
-                )}
-                {node.children && node.children.length > 1 && idx > 0 && idx < node.children.length - 1 && (
-                  <div className="absolute top-0 left-0 w-full h-[3px] bg-neutral-300 dark:bg-neutral-600" />
-                )}
-                <div className="absolute top-0 left-1/2 w-[3px] h-6 bg-neutral-300 dark:bg-neutral-600 transform -translate-x-1/2" />
-                {renderNode(child, depth + 1, idx)}
+
+                {/* Vertical line to child node */}
+                <div className="absolute top-0 left-1/2 w-[2px] h-6 bg-neutral-300 dark:bg-neutral-600 transform -translate-x-1/2" />
+
+                {/* Child Node Content (pushed down by h-6) */}
+                <div className="pt-6">
+                   {renderNode(child, depth + 1, idx, node.children!.length)}
+                </div>
               </div>
             )})}
           </div>
@@ -153,17 +165,15 @@ const Mindmap: React.FC<MindmapProps> = ({ data }) => {
         )}
       </div>
       
-      {useMermaid ? (
-        <div className="flex items-center justify-center overflow-x-auto">
+      <div className="flex items-center justify-center overflow-x-auto min-h-[500px]">
+        {useMermaid ? (
           <div ref={mermaidRef} className="mermaid-container" />
-        </div>
-      ) : (
-        <div className="flex items-center justify-center overflow-x-auto">
+        ) : (
           <div className="min-w-max flex flex-col items-center p-8">
             {renderNode(data)}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

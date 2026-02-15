@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
       worker: {
         plugins: () => [
           wasm(),
-          topLevelAwait()
+          // topLevelAwait() // Removed to avoid conflict with pdfjs-dist worker build
         ]
       }
     };
