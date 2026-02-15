@@ -611,7 +611,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen w-full overflow-hidden ${state.isDarkMode ? 'dark' : ''}`}>
-      <div className="flex w-full h-full bg-neutral-700 transition-colors selection:bg-neutral-600 selection:text-white">
+      <div className="flex w-full h-full bg-neutral-900 transition-colors selection:bg-neutral-800 selection:text-white">
         
         {/* Sidebar */}
         <div className="flex-shrink-0 z-50">
@@ -653,27 +653,27 @@ const App: React.FC = () => {
         <main className="flex-1 flex flex-col min-w-0 h-full relative">
           
           {/* Top Navigation Bar */}
-          <header className="h-12 border-b border-neutral-600 flex items-center justify-between px-4 bg-neutral-700 sticky top-0 z-40">
+          <header className="h-10 border-b border-neutral-800 flex items-center justify-between px-3 bg-neutral-900 sticky top-0 z-40">
             <div className="flex items-center gap-3">
               {/* Spacer if sidebar unpinned and open to prevent overlap if necessary, though absolute positioning handles most */}
               {!isSidebarPinned && <div className="w-8"></div>}
               
-              <div className="w-5 h-5 bg-neutral-100 rounded flex items-center justify-center text-black font-black text-[10px]">A</div>
+              <div className="w-4 h-4 bg-orange-500 rounded flex items-center justify-center text-black font-black text-[9px]">A</div>
               <div className="flex flex-col">
-                 <h1 className="text-[10px] font-black text-neutral-400 tracking-widest uppercase leading-none mb-0.5">{activeNotebook?.name || 'Studio Core'}</h1>
+                 <h1 className="text-[10px] font-bold text-neutral-300 tracking-wider uppercase leading-none mb-0.5">{activeNotebook?.name || 'Studio Core'}</h1>
                  <span className="text-[8px] font-mono text-neutral-600 uppercase">{activePage?.name}</span>
               </div>
-              <div className="h-4 w-[1px] bg-neutral-500 mx-1" />
-              <div className="text-[10px] text-neutral-400 font-mono italic">CLUSTER: {activeNotebook?.sources.length || 0} SIGNALS</div>
+              <div className="h-3 w-[1px] bg-neutral-700 mx-1" />
+              <div className="text-[9px] text-neutral-500 font-mono">SIGNAL CLUSTER: {activeNotebook?.sources.length || 0}</div>
             </div>
 
             <div className="flex items-center gap-1">
-              <nav className="hidden md:flex items-center bg-neutral-700 p-0.5 rounded border border-neutral-600">
+              <nav className="hidden md:flex items-center bg-neutral-800 p-0.5 rounded border border-neutral-700/50">
                 {(['report', 'dashboard', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'canvas', 'chat'] as StudioView[]).map((view) => (
                   <button
                     key={view}
                     onClick={() => setState(prev => ({...prev, activeView: view}))}
-                    className={`px-3 py-1 rounded text-[9px] font-black transition-all whitespace-nowrap uppercase tracking-widest border-2 border-transparent ${state.activeView === view ? 'bg-neutral-600 text-neutral-100 border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : 'text-neutral-400 hover:text-neutral-200 hover:border-orange-500'}`}
+                    className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all whitespace-nowrap uppercase tracking-wider border border-transparent ${state.activeView === view ? 'bg-neutral-700 text-neutral-100 border-neutral-600' : 'text-neutral-500 hover:text-neutral-300 hover:border-neutral-600'}`}
                   >
                     {view}
                   </button>
@@ -684,7 +684,7 @@ const App: React.FC = () => {
                  <select 
                     value={state.activeView} 
                     onChange={(e) => setState(prev => ({...prev, activeView: e.target.value as StudioView}))}
-                    className="bg-neutral-600 text-neutral-200 text-[9px] font-black uppercase p-1 rounded border-2 border-transparent hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)] outline-none"
+                    className="bg-neutral-800 text-neutral-300 text-[9px] font-bold uppercase p-1 rounded border border-neutral-700 outline-none"
                  >
                     {(['report', 'dashboard', 'infographic', 'mindmap', 'flashcards', 'slides', 'table', 'canvas', 'chat'] as StudioView[]).map((view) => (
                        <option key={view} value={view}>{view}</option>
@@ -692,103 +692,101 @@ const App: React.FC = () => {
                  </select>
               </div>
 
-              <div className="h-4 w-[1px] bg-neutral-500 mx-2 hidden md:block" />
+              <div className="h-3 w-[1px] bg-neutral-700 mx-2 hidden md:block" />
               <button 
                 onClick={() => setIsStyleModalOpen(true)}
-                className="p-1.5 rounded transition-all text-[9px] font-black uppercase tracking-widest border-2 border-transparent text-neutral-300 hover:text-white hover:bg-neutral-600 hover:border-orange-500"
+                className="p-1 rounded transition-all text-[9px] font-bold uppercase tracking-wider border border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800"
                 title="Set Complexity & Style"
               >
                 Style
               </button>
               <button 
                 onClick={() => setIsSqlModalOpen(true)}
-                className={`p-1.5 rounded transition-all text-[9px] font-black uppercase tracking-widest border-2 ${state.sqlConfig.active ? 'text-green-400 bg-neutral-600 border-green-700 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'text-neutral-300 hover:text-white hover:bg-neutral-600 border-transparent hover:border-orange-500'}`}
+                className={`p-1 rounded transition-all text-[9px] font-bold uppercase tracking-wider border border-transparent ${state.sqlConfig.active ? 'text-green-400 bg-neutral-800 border-green-900/50' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
                 title="Connect Data Source"
               >
                 {state.sqlConfig.active ? 'DB Active' : 'DB Connect'}
               </button>
-              <div className="h-4 w-[1px] bg-neutral-500 mx-2 hidden md:block" />
-              <button onClick={handleGenerateAll} title="Synthesize All" className="p-1.5 text-neutral-300 hover:text-white hover:bg-neutral-600 rounded transition-all border-2 border-transparent hover:border-orange-500">⚡</button>
-              <button onClick={() => setIsSettingsOpen(true)} className="p-1.5 text-neutral-300 hover:text-white hover:bg-neutral-600 rounded transition-all border-2 border-transparent hover:border-orange-500">⚙</button>
+              <div className="h-3 w-[1px] bg-neutral-700 mx-2 hidden md:block" />
+              <button onClick={handleGenerateAll} title="Synthesize All" className="p-1 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-all">⚡</button>
+              <button onClick={() => setIsSettingsOpen(true)} className="p-1 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-all">⚙</button>
             </div>
           </header>
 
           {/* Canvas */}
-          <div className="flex-1 overflow-y-auto bg-neutral-700 p-10 custom-scrollbar relative">
-            <div className="absolute top-0 right-0 p-4 pointer-events-none opacity-5">
-              <span className="text-[120px] font-black select-none uppercase tracking-tighter">ANTIGRAVITY</span>
+          <div className="flex-1 overflow-y-auto bg-black/20 p-4 custom-scrollbar relative">
+            <div className="absolute top-0 right-0 p-4 pointer-events-none opacity-[0.02]">
+              <span className="text-[100px] font-black select-none uppercase tracking-tighter">ANTIGRAVITY</span>
             </div>
 
-            <div className="max-w-6xl mx-auto min-h-full pb-64 relative z-10">
+            <div className="w-full max-w-full px-4 mx-auto min-h-full pb-64 relative z-10">
               {state.activeView !== 'chat' && !activePage?.generatedContent[state.activeView] && !state.isLoading ? (
                 <div className="h-[70vh] flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
-                  <div className="p-16 bg-neutral-600 rounded-lg border border-neutral-500 max-w-lg shadow-[0_0_50px_-12px_rgba(255,255,255,0.05)] relative group">
+                  <div className="p-8 bg-neutral-900/80 rounded-lg border border-neutral-800 max-w-md shadow-2xl relative group backdrop-blur-sm">
                     {/* Close Button (X) */}
                     <button 
                       onClick={cancelGeneration}
-                      className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white transition-all border-2 border-transparent hover:border-orange-500 rounded"
+                      className="absolute top-3 right-3 p-1 text-neutral-600 hover:text-white transition-all rounded hover:bg-neutral-800"
                       title="Cancel and close"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
 
-                    <h2 className="text-xl font-black text-neutral-100 mb-2 tracking-widest uppercase">Terminal Idle</h2>
-                    <p className="text-neutral-400 text-[10px] font-mono mb-10 leading-relaxed uppercase">Generate a comprehensive {state.activeView} from the cluster.</p>
+                    <h2 className="text-sm font-bold text-neutral-200 mb-1 tracking-wider uppercase">Terminal Idle</h2>
+                    <p className="text-neutral-500 text-[10px] font-mono mb-6 leading-relaxed uppercase">Generate a comprehensive {state.activeView} from the cluster.</p>
                     
-                    <div className="mb-8 text-left">
-                      <label className="block text-[8px] font-black text-neutral-400 uppercase tracking-[0.3em] mb-3">Synthesis Focus</label>
+                    <div className="mb-6 text-left">
+                      <label className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-2">Synthesis Focus</label>
                       <input 
                         id="synthesis-focus"
                         type="text"
                         value={focusArea}
                         onChange={(e) => setFocusArea(e.target.value)}
                         placeholder="Define directive..."
-                        className="w-full bg-neutral-700 border-2 border-neutral-500 rounded p-4 focus:ring-0 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)] outline-none text-xs text-neutral-300 font-mono uppercase transition-all hover:border-orange-500"
+                        className="w-full bg-neutral-800 border border-neutral-700 rounded p-2 focus:border-orange-500 outline-none text-[10px] text-neutral-300 font-mono uppercase transition-all"
                       />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <button onClick={() => { setUserClickedGenerate(true); handleGenerate(state.activeView); }} className="w-full bg-white text-black font-black py-4 rounded uppercase tracking-[0.2em] text-[10px] hover:bg-neutral-200 transition-colors">Execute Single View</button>
-                      <button onClick={() => { setUserClickedGenerate(true); handleGenerateAll(); }} className="w-full bg-neutral-900 border border-neutral-600 text-neutral-300 font-black py-4 rounded hover:bg-neutral-700 uppercase tracking-[0.2em] text-[10px] transition-colors">Execute Full Workspace</button>
-                      <button onClick={cancelGeneration} className="w-full mt-2 text-[9px] font-black text-neutral-500 uppercase tracking-widest hover:text-neutral-300 transition-colors">Abort Procedure</button>
+                      <button onClick={() => { setUserClickedGenerate(true); handleGenerate(state.activeView); }} className="w-full bg-neutral-100 text-black font-bold py-2.5 rounded uppercase tracking-wider text-[10px] hover:bg-white transition-colors">Execute Single View</button>
+                      <button onClick={() => { setUserClickedGenerate(true); handleGenerateAll(); }} className="w-full bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold py-2.5 rounded hover:bg-neutral-700 hover:text-white uppercase tracking-wider text-[10px] transition-colors">Execute Full Workspace</button>
                     </div>
                   </div>
                 </div>
               ) : state.isLoading ? (
                 <div className="h-[70vh] flex flex-col items-center justify-center space-y-4">
-                  <div className="w-12 h-0.5 bg-neutral-700 overflow-hidden">
-                    <div className="w-full h-full bg-white animate-[loading_1.5s_infinite]" />
+                  <div className="w-12 h-0.5 bg-neutral-800 overflow-hidden rounded-full">
+                    <div className="w-full h-full bg-orange-500 animate-[loading_1s_infinite]" />
                   </div>
-                  <p className="text-neutral-500 font-mono text-[9px] tracking-[0.4em] uppercase">Synthesizing Signal Data...</p>
+                  <p className="text-neutral-500 font-mono text-[9px] tracking-[0.4em] uppercase">Synthesizing...</p>
                 </div>
               ) : state.activeView === 'chat' ? (
                 <div className="h-[50vh] flex flex-col items-center justify-center text-center opacity-20 pointer-events-none select-none">
-                  <div className="w-16 h-[1px] bg-neutral-500 mb-4" />
-                  <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.3em]">Ready</p>
+                  <div className="w-16 h-[1px] bg-neutral-700 mb-4" />
+                  <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-[0.3em]">Ready</p>
                 </div>
               ) : !activePage?.generatedContent[state.activeView] && !userClickedGenerate ? (
                 <div className="h-[70vh] flex flex-col items-center justify-center text-center">
-                   <div className="w-16 h-16 rounded-full border border-neutral-700 border-dashed mb-8 animate-[spin_20s_linear_infinite]"></div>
-                   <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em] mb-4">Module Ready: {state.activeView}</h2>
+                   <div className="w-12 h-12 rounded-full border border-neutral-800 border-dashed mb-6 animate-[spin_10s_linear_infinite]"></div>
+                   <h2 className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.4em] mb-4">Module Ready: {state.activeView}</h2>
                    <button 
                      onClick={() => setUserClickedGenerate(true)}
-                     className="px-6 py-3 border border-orange-500/50 text-orange-500 rounded text-[9px] font-black uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all shadow-[0_0_15px_rgba(249,115,22,0.2)]"
+                     className="px-5 py-2 border border-neutral-700 text-neutral-400 rounded text-[9px] font-bold uppercase tracking-widest hover:bg-neutral-800 hover:text-white transition-all"
                    >
                      Initialize Synthesis
                    </button>
                 </div>
               ) : (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-1000">
-                  <div className="flex justify-between items-center mb-12">
-                     <div className="flex items-center gap-4">
-                        <div className="w-2 h-2 rounded-full bg-neutral-100 animate-pulse"></div>
-                        <h2 className="text-[10px] font-black text-neutral-50 uppercase tracking-[0.3em]">Module: {state.activeView}</h2>
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="flex justify-between items-center mb-6 border-b border-neutral-800 pb-2">
+                     <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
+                        <h2 className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest">Module: {state.activeView}</h2>
                      </div>
-                     <div className="h-[1px] flex-1 bg-neutral-600 mx-8"></div>
-                     <button onClick={() => handleGenerate(state.activeView)} className="text-[9px] font-black text-neutral-400 hover:text-white uppercase tracking-widest px-4 py-2 border-2 border-neutral-600 rounded hover:bg-neutral-600 transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]">Re-Synthesize</button>
+                     <button onClick={() => handleGenerate(state.activeView)} className="text-[9px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest px-3 py-1 border border-neutral-800 rounded hover:bg-neutral-800 transition-all">Re-Synthesize</button>
                   </div>
 
-                  <div className="space-y-12">
+                  <div className="space-y-8">
                     {state.activeView === 'report' && <Report data={activePage!.generatedContent.report!} onTitleChange={handleReportTitleChange} />}
                     {state.activeView === 'infographic' && <Infographic data={activePage!.generatedContent.infographic!} />}
                     {state.activeView === 'mindmap' && <Mindmap data={activePage!.generatedContent.mindmap!} />}
@@ -802,19 +800,19 @@ const App: React.FC = () => {
               )}
 
               {state.error && (
-                <div className="mt-8 bg-neutral-700 border border-neutral-500 text-neutral-400 p-6 rounded text-[10px] font-mono uppercase tracking-widest text-center shadow-lg">ERROR_CODE_552: {state.error}</div>
+                <div className="mt-8 bg-neutral-900 border border-red-900/30 text-red-400 p-4 rounded text-[10px] font-mono uppercase tracking-widest text-center">ERROR: {state.error}</div>
               )}
             </div>
           </div>
 
           {/* Floating Chat */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-8 pointer-events-none z-30">
-            <div className="pointer-events-auto bg-neutral-700/95 backdrop-blur-md rounded border border-neutral-600 shadow-2xl flex flex-col transition-all duration-300" style={{ maxHeight: activePage?.chatHistory.length ? '60vh' : 'auto' }}>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-3xl px-4 pointer-events-none z-30">
+            <div className="pointer-events-auto bg-neutral-900/95 backdrop-blur-md rounded-lg border border-neutral-800 shadow-2xl flex flex-col transition-all duration-300" style={{ maxHeight: activePage?.chatHistory.length ? '50vh' : 'auto' }}>
               {activePage?.chatHistory.length > 0 && (
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar border-b border-neutral-600/50">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar border-b border-neutral-800">
                   {activePage?.chatHistory.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] px-4 py-3 rounded text-xs leading-relaxed ${msg.role === 'user' ? 'bg-neutral-100 text-black font-medium' : 'bg-neutral-600/50 text-neutral-200 font-mono'}`}>
+                      <div className={`max-w-[90%] px-3 py-2 rounded text-[11px] leading-relaxed ${msg.role === 'user' ? 'bg-neutral-200 text-black font-medium' : 'bg-neutral-800 text-neutral-300 font-mono border border-neutral-700'}`}>
                         {msg.content}
                       </div>
                     </div>
@@ -823,16 +821,16 @@ const App: React.FC = () => {
                 </div>
               )}
               
-              <form onSubmit={handleChat} className="p-3 flex gap-3 bg-neutral-700/50">
+              <form onSubmit={handleChat} className="p-2 flex gap-2 bg-neutral-900 rounded-b-lg">
                 <input 
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="INPUT COMMAND OR QUERY..."
-                   className="flex-1 bg-neutral-600 border-2 border-neutral-500 text-neutral-100 rounded px-6 py-4 outline-none text-[10px] font-black uppercase tracking-widest transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                  placeholder="INPUT COMMAND..."
+                   className="flex-1 bg-neutral-800 border border-neutral-700 text-neutral-200 rounded px-4 py-3 outline-none text-[10px] font-bold uppercase tracking-widest transition-all focus:border-neutral-500"
                 />
-                <button type="submit" disabled={state.isLoading} className="bg-neutral-100 disabled:opacity-20 text-black w-12 rounded flex items-center justify-center hover:bg-white transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+                <button type="submit" disabled={state.isLoading} className="bg-neutral-100 disabled:opacity-20 text-black w-10 rounded flex items-center justify-center hover:bg-white transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
                 </button>
               </form>
             </div>
@@ -848,105 +846,93 @@ const App: React.FC = () => {
         )}
 
         {isSqlModalOpen && (
-          <div className="fixed inset-0 bg-neutral-700/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-             <div className="bg-neutral-600 rounded-[2rem] w-full max-w-lg shadow-2xl border border-neutral-500 overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="p-8 border-b border-neutral-500 flex justify-between items-center">
-                   <h2 className="text-xl font-black text-white tracking-tight uppercase">SQL Data Bridge (Simulation)</h2>
-                   <button onClick={() => setIsSqlModalOpen(false)} className="text-neutral-400 hover:text-white transition-all border-2 border-transparent hover:border-orange-500 rounded p-1">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+             <div className="bg-neutral-900 rounded-lg w-full max-w-lg shadow-2xl border border-neutral-700 overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="p-4 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/50">
+                   <h2 className="text-sm font-bold text-neutral-200 tracking-wider uppercase">SQL Data Bridge</h2>
+                   <button onClick={() => setIsSqlModalOpen(false)} className="text-neutral-500 hover:text-white transition-all p-1 hover:bg-neutral-800 rounded">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                    </button>
                 </div>
-                <div className="p-8 space-y-6">
-                    <p className="text-[10px] text-neutral-300 font-mono leading-relaxed">
-                        Browser security prevents direct TCP connections to SQL Servers. This bridge allows you to ingest a schema or dataset dump (JSON/CSV) which the AI will treat as a live database for complex queries, joins, and aggregations.
+                <div className="p-5 space-y-4">
+                    <p className="text-[10px] text-neutral-400 font-mono leading-relaxed">
+                        Secure Bridge active. Ingest schema or JSON dumps to enable localized query reasoning.
                     </p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                        <div>
-                          <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Server Ref</label>
-                          <input type="text" value={sqlServer} onChange={e => setSqlServer(e.target.value)} placeholder="localhost" className="w-full bg-neutral-700 border-2 border-neutral-500 rounded-xl p-3 text-xs text-white transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)] outline-none" />
+                          <label className="block text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1">Server Ref</label>
+                          <input type="text" value={sqlServer} onChange={e => setSqlServer(e.target.value)} placeholder="localhost" className="w-full bg-neutral-800 border border-neutral-700 rounded p-2 text-[10px] text-neutral-300 transition-all focus:border-blue-500 outline-none" />
                        </div>
                        <div>
-                          <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Database</label>
-                          <input type="text" value={sqlDb} onChange={e => setSqlDb(e.target.value)} placeholder="AnalyticsDB" className="w-full bg-neutral-700 border-2 border-neutral-500 rounded-xl p-3 text-xs text-white transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)] outline-none" />
+                          <label className="block text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1">Database</label>
+                          <input type="text" value={sqlDb} onChange={e => setSqlDb(e.target.value)} placeholder="AnalyticsDB" className="w-full bg-neutral-800 border border-neutral-700 rounded p-2 text-[10px] text-neutral-300 transition-all focus:border-blue-500 outline-none" />
                        </div>
                     </div>
                     <div>
-                       <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Schema / Data Dump Context</label>
+                       <label className="block text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1">Schema / Data Context</label>
                        <textarea 
                           id="sql-schema"
                           value={sqlSchema} 
                           onChange={e => setSqlSchema(e.target.value)} 
                           placeholder="PASTE TABLE SCHEMAS OR JSON DATA HERE..." 
-                          className="w-full bg-neutral-700 border-2 border-neutral-500 rounded-xl p-4 h-40 text-[10px] font-mono text-neutral-200 resize-none outline-none transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                          className="w-full bg-neutral-800 border border-neutral-700 rounded p-3 h-32 text-[10px] font-mono text-neutral-300 resize-none outline-none transition-all focus:border-blue-500"
                         />
                     </div>
                     <div className="flex gap-2">
                       <button 
                         onClick={handleConnectSql}
-                        className="flex-1 bg-white hover:bg-neutral-200 text-black font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs border-2 border-transparent focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                        className="flex-1 bg-neutral-100 hover:bg-white text-black font-bold py-2 rounded text-[10px] uppercase tracking-widest transition-all"
                       >
                         Establish Bridge
                       </button>
                       {state.sqlConfig.active && state.sqlConfig.transformLog && state.sqlConfig.transformLog.length > 0 && (
                         <button 
                           onClick={exportSqlTransformLog}
-                          className="px-6 bg-neutral-500 hover:bg-neutral-400 text-white font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs border-2 border-transparent hover:border-orange-500"
+                          className="px-4 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold py-2 rounded text-[10px] uppercase tracking-widest border border-neutral-700"
                         >
                           Export Log
                         </button>
                       )}
                     </div>
-                    {state.sqlConfig.active && state.sqlConfig.transformLog && state.sqlConfig.transformLog.length > 0 && (
-                      <div className="mt-4 p-4 bg-neutral-700 rounded-xl border border-neutral-500">
-                        <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Transform Log ({state.sqlConfig.transformLog.length} operations)</label>
-                        <div className="max-h-32 overflow-y-auto text-[9px] font-mono text-neutral-300 space-y-1">
-                          {state.sqlConfig.transformLog.slice(-5).map((log, idx) => (
-                            <div key={idx} className="text-neutral-400">
-                              {new Date(log.timestamp).toLocaleTimeString()}: {log.operation} - {log.description}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                 </div>
              </div>
           </div>
         )}
 
         {isStyleModalOpen && (
-          <div className="fixed inset-0 bg-neutral-700/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-             <div className="bg-neutral-600 rounded-[2rem] w-full max-w-2xl shadow-2xl border border-neutral-500 overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="p-8 border-b border-neutral-500 flex justify-between items-center">
-                   <h2 className="text-xl font-black text-white tracking-tight uppercase">Complexity & Style Definition</h2>
-                   <button onClick={() => setIsStyleModalOpen(false)} className="text-neutral-400 hover:text-white transition-all border-2 border-transparent hover:border-orange-500 rounded p-1">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+             <div className="bg-neutral-900 rounded-lg w-full max-w-lg shadow-2xl border border-neutral-700 overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="p-4 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/50">
+                   <h2 className="text-sm font-bold text-neutral-200 tracking-wider uppercase">Style Definition</h2>
+                   <button onClick={() => setIsStyleModalOpen(false)} className="text-neutral-500 hover:text-white transition-all p-1 hover:bg-neutral-800 rounded">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                    </button>
                 </div>
-                <div className="p-8 space-y-6">
-                    <p className="text-[10px] text-neutral-300 font-mono leading-relaxed">
-                        Define complexity level and style preferences for all generated outputs. These settings will guide the AI in creating content that matches your desired scope and aesthetic.
+                <div className="p-5 space-y-4">
+                    <p className="text-[10px] text-neutral-400 font-mono leading-relaxed">
+                        Configure output parameters.
                     </p>
                     <div>
-                       <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Complexity Level</label>
+                       <label className="block text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1">Complexity</label>
                        <select 
                           value={complexityLevel} 
                           onChange={e => setComplexityLevel(e.target.value)} 
-                          className="w-full bg-neutral-700 border-2 border-neutral-500 rounded-xl p-3 text-xs text-white transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)] outline-none"
+                          className="w-full bg-neutral-800 border border-neutral-700 rounded p-2 text-[10px] text-neutral-300 outline-none focus:border-blue-500"
                        >
                           <option value="">Default</option>
-                          <option value="simple">Simple - Brief and straightforward</option>
-                          <option value="moderate">Moderate - Balanced depth</option>
-                          <option value="detailed">Detailed - Comprehensive analysis</option>
-                          <option value="technical">Technical - Expert-level detail</option>
+                          <option value="simple">Simple</option>
+                          <option value="moderate">Moderate</option>
+                          <option value="detailed">Detailed</option>
+                          <option value="technical">Technical</option>
                        </select>
                     </div>
                     <div>
-                       <label className="block text-[0.6rem] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Style Definition</label>
+                       <label className="block text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1">Directives</label>
                        <textarea 
                           value={styleDefinition} 
                           onChange={e => setStyleDefinition(e.target.value)} 
-                          placeholder="E.g., 'Use professional tone, include specific examples, focus on actionable insights...'" 
-                          className="w-full bg-neutral-700 border-2 border-neutral-500 rounded-xl p-4 h-32 text-[10px] font-mono text-neutral-200 resize-none outline-none transition-all hover:border-orange-500 focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                          placeholder="Enter custom style instructions..."
+                          className="w-full bg-neutral-800 border border-neutral-700 rounded p-3 h-32 text-[10px] font-mono text-neutral-300 resize-none outline-none transition-all focus:border-blue-500"
                         />
                     </div>
                     <button 
@@ -964,7 +950,7 @@ const App: React.FC = () => {
                         }));
                         setIsStyleModalOpen(false);
                       }}
-                      className="w-full bg-white hover:bg-neutral-200 text-black font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs border-2 border-transparent focus:border-orange-500 focus:shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                      className="w-full bg-neutral-100 hover:bg-white text-black font-bold py-2 rounded text-[10px] uppercase tracking-widest transition-all"
                     >
                       Apply Settings
                     </button>
@@ -976,10 +962,10 @@ const App: React.FC = () => {
       </div>
       <style>{`
         @keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #404040; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #525252; }
       `}</style>
     </div>
   );

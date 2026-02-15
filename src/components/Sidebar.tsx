@@ -1,12 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Source, Notebook, Page, LLMSettings } from '../types';
+import React, { useState, useRef } from 'react';
+import { Source, Notebook, LLMSettings } from '../types';
 // @ts-ignore
 import JSZip from 'jszip';
 import { performDeepResearch } from '../services/llmService';
-import { sanitizeText, sanitizeFilename, sanitizeUrl } from '../utils/sanitize';
-import { parsePDF, parseDocx, parseExcel, runOCR } from '../services/documentParsers';
-import { extractTextFromPPTX } from '../services/documentParsers';
-import { vectorStore } from '../services/rag/vectorStore'; // RAG Integration // I will add this to the parser file shortly or assume it exists
+import { sanitizeText, sanitizeUrl } from '../utils/sanitize';
+import { parsePDF, parseDocx, parseExcel, runOCR, extractTextFromPPTX } from '../services/documentParsers';
+import { vectorStore } from '../services/rag/vectorStore';
 
 interface SidebarProps {
   notebooks: Notebook[];
@@ -543,8 +542,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   // CSS for slide-out
   const sidebarClass = `
     h-full bg-neutral-900 border-r border-neutral-800 flex flex-col transition-all duration-300 ease-in-out z-50
-    ${isSidebarPinned ? 'relative w-80' : 'fixed top-0 left-0 shadow-2xl'}
-    ${!isSidebarPinned && !isSidebarOpen ? '-translate-x-full w-80' : 'translate-x-0 w-80'}
+    ${isSidebarPinned ? 'relative w-64' : 'fixed top-0 left-0 shadow-2xl w-64'}
+    ${!isSidebarPinned && !isSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
   `;
 
   return (
@@ -553,7 +552,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {!isSidebarPinned && !isSidebarOpen && (
         <button 
           onClick={() => setIsSidebarOpen(true)}
-          className="fixed top-4 left-4 z-40 bg-neutral-900 text-neutral-400 p-2 rounded-lg border border-neutral-700 hover:text-white shadow-lg transition-all"
+          className="fixed top-3 left-3 z-40 bg-neutral-900 text-neutral-400 p-1.5 rounded-lg border border-neutral-700 hover:text-white shadow-lg transition-all"
         >
            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
@@ -562,19 +561,19 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar Container */}
       <div className={sidebarClass}>
          {/* Sidebar Header */}
-         <div className="p-4 flex items-center justify-between border-b border-neutral-800 bg-neutral-900">
-            <h2 className="text-sm font-black text-neutral-400 tracking-widest uppercase">Antigravity Studio</h2>
-            <div className="flex items-center gap-2">
+         <div className="p-3 flex items-center justify-between border-b border-neutral-800 bg-neutral-900">
+            <h2 className="text-xs font-black text-neutral-400 tracking-widest uppercase">Antigravity</h2>
+            <div className="flex items-center gap-1.5">
                <button 
                  onClick={() => { setIsSidebarPinned(!isSidebarPinned); if(!isSidebarPinned) setIsSidebarOpen(true); }}
-                 className={`p-1.5 rounded transition-colors ${isSidebarPinned ? 'text-white bg-neutral-800' : 'text-neutral-500 hover:text-neutral-300'}`}
+                 className={`p-1 rounded transition-colors ${isSidebarPinned ? 'text-white bg-neutral-800' : 'text-neutral-500 hover:text-neutral-300'}`}
                  title={isSidebarPinned ? "Unpin Sidebar" : "Pin Sidebar"}
                >
-                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                </button>
                {!isSidebarPinned && (
-                 <button onClick={() => setIsSidebarOpen(false)} className="p-1.5 text-neutral-500 hover:text-white">
-                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                 <button onClick={() => setIsSidebarOpen(false)} className="p-1 text-neutral-500 hover:text-white">
+                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                  </button>
                )}
             </div>
@@ -584,22 +583,22 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="border-b border-neutral-800 flex-shrink-0">
            <button 
              onClick={() => toggleSection('explorer')}
-             className="w-full flex items-center justify-between p-4 text-[10px] font-black text-neutral-100 uppercase tracking-[0.2em] hover:bg-neutral-800 transition-colors"
+             className="w-full flex items-center justify-between p-3 text-[10px] font-black text-neutral-100 uppercase tracking-[0.2em] hover:bg-neutral-800 transition-colors"
            >
              <span>Explorer</span>
              <svg className={`w-3 h-3 transition-transform ${openSections.explorer ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
            </button>
            
            {openSections.explorer && (
-             <div className="p-2 space-y-1 max-h-[30vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
+             <div className="p-1.5 space-y-0.5 max-h-[30vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
                 {/* Controls */}
-                <div className="flex gap-2 px-2 pb-2">
-                  <button onClick={() => zipInputRef.current?.click()} className="text-neutral-500 hover:text-white transition-colors" title="Import Notebook (Zip)">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                <div className="flex gap-1 px-1 pb-1">
+                  <button onClick={() => zipInputRef.current?.click()} className="text-neutral-500 hover:text-white transition-colors p-1" title="Import Notebook (Zip)">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                   </button>
                   <input type="file" ref={zipInputRef} hidden accept=".zip" onChange={handleImportZip} />
-                  <button onClick={onCreateNotebook} className="text-neutral-500 hover:text-white transition-colors" title="New Notebook">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  <button onClick={onCreateNotebook} className="text-neutral-500 hover:text-white transition-colors p-1" title="New Notebook">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                   </button>
                 </div>
 
@@ -607,13 +606,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {notebooks.map((nb, nbIndex) => (
                    <div 
                       key={nb.id} 
-                      className="mb-1"
+                      className="mb-0.5"
                       draggable
                       onDragStart={(e) => handleDragStart(e, 'notebook', nb.id, nbIndex)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, 'notebook', nbIndex)}
                    >
-                      <div className={`group flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${activeNotebookId === nb.id ? 'bg-neutral-800' : 'hover:bg-neutral-800/50'}`}>
+                      <div className={`group flex items-center gap-1.5 p-1.5 rounded cursor-pointer transition-colors ${activeNotebookId === nb.id ? 'bg-neutral-800' : 'hover:bg-neutral-800/50'}`}>
                          <button onClick={(e) => { e.stopPropagation(); toggleExpand(nb.id); }} className="text-neutral-500 hover:text-white">
                             <svg className={`w-3 h-3 transition-transform ${expandedNotebooks.has(nb.id) ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                          </button>
@@ -626,29 +625,29 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   onBlur={() => saveEditing(nb.id, true)}
                                   onKeyDown={e => e.key === 'Enter' && saveEditing(nb.id, true)}
                                   autoFocus
-                                  className="w-full bg-black text-white text-xs p-1 rounded border border-neutral-600 outline-none"
+                                  className="w-full bg-black text-white text-[10px] p-0.5 rounded border border-neutral-600 outline-none"
                                   onClick={e => e.stopPropagation()}
                                />
                             ) : (
                                <span 
-                                  className={`block text-xs font-black uppercase tracking-wider truncate ${activeNotebookId === nb.id ? 'text-white' : 'text-neutral-400'}`}
+                                  className={`block text-[10px] font-bold uppercase tracking-wider truncate ${activeNotebookId === nb.id ? 'text-white' : 'text-neutral-400'}`}
                                   onDoubleClick={() => startEditing(nb.id, nb.name)}
                                >
                                   {nb.name}
                                </span>
                             )}
                          </div>
-                         <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
-                            <button onClick={(e) => { e.stopPropagation(); startEditing(nb.id, nb.name); }} className="text-neutral-500 hover:text-white" title="Rename">
+                         <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-0.5">
+                            <button onClick={(e) => { e.stopPropagation(); startEditing(nb.id, nb.name); }} className="text-neutral-500 hover:text-white p-0.5" title="Rename">
                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleExportNotebook(nb.id); }} className="text-neutral-500 hover:text-white" title="Export">
+                            <button onClick={(e) => { e.stopPropagation(); handleExportNotebook(nb.id); }} className="text-neutral-500 hover:text-white p-0.5" title="Export">
                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); onCreatePage(nb.id); }} className="text-neutral-500 hover:text-white" title="Add Page">
+                            <button onClick={(e) => { e.stopPropagation(); onCreatePage(nb.id); }} className="text-neutral-500 hover:text-white p-0.5" title="Add Page">
                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); onDeleteNotebook(nb.id); }} className="text-neutral-500 hover:text-red-500" title="Delete">
+                            <button onClick={(e) => { e.stopPropagation(); onDeleteNotebook(nb.id); }} className="text-neutral-500 hover:text-red-500 p-0.5" title="Delete">
                                <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
                             </button>
                          </div>
@@ -656,18 +655,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                       
                       {/* Nested Pages */}
                       {expandedNotebooks.has(nb.id) && (
-                         <div className="ml-4 pl-2 border-l border-neutral-800 mt-1 space-y-0.5">
+                         <div className="ml-3 pl-2 border-l border-neutral-800 mt-0.5 space-y-0.5">
                             {nb.pages.map((page, pIndex) => (
                                <div 
                                   key={page.id} 
-                                  className={`group/page flex items-center gap-2 p-1.5 rounded cursor-pointer transition-colors ${activePageId === page.id && activeNotebookId === nb.id ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30'}`}
+                                  className={`group/page flex items-center gap-2 p-1 rounded cursor-pointer transition-colors ${activePageId === page.id && activeNotebookId === nb.id ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30'}`}
                                   draggable
                                   onDragStart={(e) => handleDragStart(e, 'page', page.id, pIndex, nb.id)}
                                   onDragOver={handleDragOver}
                                   onDrop={(e) => handleDrop(e, 'page', pIndex, nb.id)}
                                   onClick={() => onSwitchNotebook(nb.id, page.id)}
                                >
-                                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-600 group-hover/page:bg-neutral-400"></div>
+                                  <div className="w-1 h-1 rounded-full bg-neutral-600 group-hover/page:bg-neutral-400"></div>
                                   <div className="flex-1 min-w-0">
                                      {editingId === page.id ? (
                                         <input 
@@ -677,12 +676,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                                            onBlur={() => saveEditing(page.id, false, nb.id)}
                                            onKeyDown={e => e.key === 'Enter' && saveEditing(page.id, false, nb.id)}
                                            autoFocus
-                                           className="w-full bg-black text-white text-xs p-0.5 rounded border border-neutral-600 outline-none"
+                                           className="w-full bg-black text-white text-[10px] p-0 rounded border border-neutral-600 outline-none"
                                            onClick={e => e.stopPropagation()}
                                         />
                                      ) : (
                                         <span 
-                                           className="block text-xs font-mono truncate"
+                                           className="block text-[10px] font-mono truncate"
                                            onDoubleClick={(e) => { e.stopPropagation(); startEditing(page.id, page.name); }}
                                         >
                                            {page.name}
@@ -710,7 +709,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="border-b border-neutral-800">
                <button 
                  onClick={() => toggleSection('sources')}
-                 className="w-full flex items-center justify-between p-4 text-xs font-black text-neutral-100 uppercase tracking-widest hover:bg-neutral-800 transition-colors"
+                 className="w-full flex items-center justify-between p-3 text-[10px] font-black text-neutral-100 uppercase tracking-widest hover:bg-neutral-800 transition-colors"
                >
                  <span>Context Signals</span>
                  <svg className={`w-3 h-3 shrink-0 transition-transform ${openSections.sources ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -718,18 +717,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                
                {/* Source Controls (Add, Undo, Redo) */}
                {openSections.sources && (
-                  <div className="flex items-center justify-between px-4 pb-2">
-                     <div className="flex gap-2">
-                        <button onClick={onUndo} disabled={!canUndo} className="text-neutral-500 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-500 transition-colors" title="Undo Source Change">
-                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                  <div className="flex items-center justify-between px-3 pb-2">
+                     <div className="flex gap-1.5">
+                        <button onClick={onUndo} disabled={!canUndo} className="text-neutral-500 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-500 transition-colors p-0.5" title="Undo Source Change">
+                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                         </button>
-                        <button onClick={onRedo} disabled={!canRedo} className="text-neutral-500 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-500 transition-colors" title="Redo Source Change">
-                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg>
+                        <button onClick={onRedo} disabled={!canRedo} className="text-neutral-500 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-500 transition-colors p-0.5" title="Redo Source Change">
+                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg>
                         </button>
                      </div>
                      <button
                         onClick={() => setIsAdding(!isAdding)}
-                        className="bg-neutral-800 text-white p-1.5 rounded hover:bg-neutral-700 transition-all"
+                        className="bg-neutral-800 text-white p-1 rounded hover:bg-neutral-700 transition-all"
                         title="Add Signal"
                      >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
@@ -739,29 +738,29 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             {openSections.sources && (
-              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar flex flex-col min-h-0 animate-in slide-in-from-bottom-2 duration-200">
+              <div className="flex-1 overflow-y-auto p-3 custom-scrollbar flex flex-col min-h-0 animate-in slide-in-from-bottom-2 duration-200">
                 {/* Add Source Form */}
                 {isAdding && (
-                  <div className="mb-6 p-3 bg-neutral-900 border border-neutral-800 rounded">
-                    <div className="flex mb-3 bg-neutral-800 rounded p-1">
-                      <button onClick={() => setAddMode('text')} className={`flex-1 py-1 text-[10px] font-black uppercase rounded ${addMode === 'text' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>Text</button>
-                      <button onClick={() => setAddMode('file')} className={`flex-1 py-1 text-[10px] font-black uppercase rounded ${addMode === 'file' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>File</button>
-                      <button onClick={() => setAddMode('url')} className={`flex-1 py-1 text-[10px] font-black uppercase rounded ${addMode === 'url' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>URL</button>
-                      <button onClick={() => setAddMode('agent')} className={`flex-1 py-1 text-[10px] font-black uppercase rounded ${addMode === 'agent' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>Agent</button>
+                  <div className="mb-4 p-2 bg-neutral-900 border border-neutral-800 rounded">
+                    <div className="flex mb-2 bg-neutral-800 rounded p-0.5">
+                      <button onClick={() => setAddMode('text')} className={`flex-1 py-1 text-[9px] font-bold uppercase rounded ${addMode === 'text' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>Text</button>
+                      <button onClick={() => setAddMode('file')} className={`flex-1 py-1 text-[9px] font-bold uppercase rounded ${addMode === 'file' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>File</button>
+                      <button onClick={() => setAddMode('url')} className={`flex-1 py-1 text-[9px] font-bold uppercase rounded ${addMode === 'url' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>URL</button>
+                      <button onClick={() => setAddMode('agent')} className={`flex-1 py-1 text-[9px] font-bold uppercase rounded ${addMode === 'agent' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}>Agent</button>
                     </div>
 
                     {isProcessing && (
                        <div className="mb-3 text-center">
-                          <div className="w-4 h-4 border-2 border-neutral-600 border-t-white rounded-full animate-spin mx-auto mb-1"></div>
-                          <span className="text-[10px] text-neutral-400 uppercase tracking-widest">{processStatus}</span>
+                          <div className="w-3 h-3 border border-neutral-600 border-t-white rounded-full animate-spin mx-auto mb-1"></div>
+                          <span className="text-[9px] text-neutral-400 uppercase tracking-widest">{processStatus}</span>
                        </div>
                     )}
 
                     {!isProcessing && addMode === 'file' && (
                       <>
-                        <div className="flex gap-2 mb-3">
+                        <div className="flex gap-1.5 mb-2">
                           <button 
-                            className="flex-1 bg-neutral-800 text-[10px] font-black uppercase p-2 border border-neutral-700 hover:border-white transition-all text-neutral-400 hover:text-white rounded"
+                            className="flex-1 bg-neutral-800 text-[9px] font-bold uppercase p-1.5 border border-neutral-700 hover:border-white transition-all text-neutral-400 hover:text-white rounded"
                             onClick={() => fileInputRef.current?.click()}
                           >
                             Select File
@@ -775,7 +774,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   accept="image/*,audio/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown,application/json"
                 />
                         </div>
-                        <p className="text-[10px] text-neutral-600 font-mono text-center mb-2">SUPPORTS: PPTX, PDF, DOCX, IMG, AUDIO, CODE, CSV, JSON</p>
+                        <p className="text-[8px] text-neutral-600 font-mono text-center mb-1">SUPPORTS: PPTX, PDF, DOCX, IMG, AUDIO, CODE, CSV, JSON</p>
                       </>
                     )}
 
@@ -784,19 +783,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <input
                           type="text"
                           placeholder="TITLE"
-                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded text-xs font-mono outline-none text-neutral-200 uppercase"
+                          className="w-full mb-1.5 p-1.5 bg-neutral-800 border border-neutral-700 rounded text-[10px] font-mono outline-none text-neutral-200 uppercase"
                           value={newTitle}
                           onChange={(e) => setNewTitle(e.target.value)}
                         />
                         <textarea
                           placeholder="DATA"
-                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded h-20 text-xs font-mono outline-none text-neutral-400 resize-none"
+                          className="w-full mb-1.5 p-1.5 bg-neutral-800 border border-neutral-700 rounded h-16 text-[10px] font-mono outline-none text-neutral-400 resize-none"
                           value={newContent}
                           onChange={(e) => setNewContent(e.target.value)}
                         />
-                        <div className="flex gap-2">
-                          <button onClick={handleAddText} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[10px] uppercase tracking-widest">Inject</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[10px] uppercase">Abort</button>
+                        <div className="flex gap-1.5">
+                          <button onClick={handleAddText} className="flex-1 bg-white text-black py-1 rounded font-bold text-[9px] uppercase tracking-widest">Inject</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1 rounded font-bold text-[9px] uppercase">Abort</button>
                         </div>
                       </>
                     )}
@@ -806,64 +805,64 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <input
                           type="text"
                           placeholder="https://example.com"
-                          className="w-full mb-2 p-2 bg-neutral-800 border border-neutral-700 rounded text-xs font-mono outline-none text-neutral-200"
+                          className="w-full mb-1.5 p-1.5 bg-neutral-800 border border-neutral-700 rounded text-[10px] font-mono outline-none text-neutral-200"
                           value={newUrl}
                           onChange={(e) => setNewUrl(e.target.value)}
                         />
-                        <div className="flex gap-2">
-                          <button onClick={handleAddUrl} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[10px] uppercase tracking-widest">Fetch</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[10px] uppercase">Abort</button>
+                        <div className="flex gap-1.5">
+                          <button onClick={handleAddUrl} className="flex-1 bg-white text-black py-1 rounded font-bold text-[9px] uppercase tracking-widest">Fetch</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1 rounded font-bold text-[9px] uppercase">Abort</button>
                         </div>
                       </>
                     )}
 
                     {!isProcessing && addMode === 'agent' && (
                       <>
-                        <div className="bg-neutral-800 p-2 mb-2 rounded border border-neutral-700">
-                           <p className="text-xs text-neutral-400 font-mono mb-2">DEEP RESEARCH AGENT</p>
+                        <div className="bg-neutral-800 p-1.5 mb-1.5 rounded border border-neutral-700">
+                           <p className="text-[9px] text-neutral-400 font-mono mb-1">DEEP RESEARCH AGENT</p>
                            <textarea
                             placeholder="Describe research topic..."
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-xs font-mono outline-none text-neutral-300 resize-none h-20"
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded p-1.5 text-[10px] font-mono outline-none text-neutral-300 resize-none h-16"
                             value={researchQuery}
                             onChange={(e) => setResearchQuery(e.target.value)}
                            />
                         </div>
-                        <div className="flex gap-2">
-                          <button onClick={handleDeepResearch} className="flex-1 bg-white text-black py-1.5 rounded font-black text-[10px] uppercase tracking-widest">Research</button>
-                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[10px] uppercase">Abort</button>
+                        <div className="flex gap-1.5">
+                          <button onClick={handleDeepResearch} className="flex-1 bg-white text-black py-1 rounded font-bold text-[9px] uppercase tracking-widest">Research</button>
+                          <button onClick={() => setIsAdding(false)} className="flex-1 bg-neutral-800 text-neutral-500 py-1 rounded font-bold text-[9px] uppercase">Abort</button>
                         </div>
                       </>
                     )}
                     
                     {!isProcessing && addMode === 'file' && (
-                      <button onClick={() => setIsAdding(false)} className="w-full bg-neutral-800 text-neutral-500 py-1.5 rounded font-black text-[10px] uppercase">Abort</button>
+                      <button onClick={() => setIsAdding(false)} className="w-full bg-neutral-800 text-neutral-500 py-1 rounded font-bold text-[9px] uppercase">Abort</button>
                     )}
                   </div>
                 )}
 
-                <div className="space-y-2 pb-4">
+                <div className="space-y-1.5 pb-4">
                   {!activeNotebook || activeNotebook.sources.length === 0 ? (
-                    <p className="text-neutral-600 text-xs font-mono uppercase tracking-widest text-center py-10 italic">No signals</p>
+                    <p className="text-neutral-600 text-[10px] font-mono uppercase tracking-widest text-center py-8 italic">No signals</p>
                   ) : (
                     activeNotebook.sources.map((source, index) => (
                       <div 
                         key={source.id} 
-                        className="group p-3 bg-neutral-800 border border-neutral-700 hover:border-neutral-600 transition-all relative rounded-lg cursor-grab active:cursor-grabbing"
+                        className="group p-2 bg-neutral-800 border border-neutral-700 hover:border-neutral-600 transition-all relative rounded-lg cursor-grab active:cursor-grabbing"
                         draggable
                         onDragStart={(e) => handleDragStart(e, 'source', source.id, index)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, 'source', index)}
                       >
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-0.5">
                            <div className="text-neutral-600 cursor-grab">
                               <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 11-4 0 2 2 0 014 0zM8 12a2 2 0 11-4 0 2 2 0 014 0zM8 18a2 2 0 11-4 0 2 2 0 014 0zM16 6a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 11-4 0 2 2 0 014 0zM16 18a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                            </div>
                            <div className={`w-1 h-2 transition-colors ${source.type === 'data' ? 'bg-blue-500' : source.type === 'image' ? 'bg-purple-500' : source.type === 'audio' ? 'bg-red-500' : source.type === 'url' ? 'bg-green-500' : source.type === 'ppt' ? 'bg-orange-500' : 'bg-neutral-600'} group-hover:bg-white`}></div>
-                           <h3 className="font-black text-neutral-200 text-xs truncate pr-4 uppercase tracking-tight flex-1">{source.title}</h3>
+                           <h3 className="font-bold text-neutral-200 text-[10px] truncate pr-4 uppercase tracking-tight flex-1">{source.title}</h3>
                         </div>
-                         <div className="flex gap-2 pl-4">
-                            <span className="text-[10px] font-black bg-neutral-900 text-neutral-500 px-1 rounded uppercase">{source.type}</span>
-                            <span className="text-[10px] font-black bg-neutral-900 text-neutral-500 px-1 rounded uppercase">
+                         <div className="flex gap-1.5 pl-4">
+                            <span className="text-[9px] font-bold bg-neutral-900 text-neutral-500 px-1 rounded uppercase">{source.type}</span>
+                            <span className="text-[9px] font-bold bg-neutral-900 text-neutral-500 px-1 rounded uppercase">
                                {source.content ? (source.content.length / 1024).toFixed(1) + 'KB' : 'BINARY'}
                             </span>
                          </div>
@@ -875,8 +874,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </button>
 
                         {/* Hover Preview Tooltip */}
-                        <div className="hidden lg:block absolute left-full top-0 ml-4 w-64 bg-neutral-900 border border-neutral-800 p-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                          <h4 className="text-xs font-black text-white uppercase tracking-widest mb-2 border-b border-neutral-800 pb-1">{source.title}</h4>
+                        <div className="hidden lg:block absolute left-full top-0 ml-4 w-64 bg-neutral-900 border border-neutral-800 p-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                          <h4 className="text-[10px] font-bold text-white uppercase tracking-widest mb-1.5 border-b border-neutral-800 pb-1">{source.title}</h4>
                           {source.type === 'image' && source.data ? (
                              <img src={source.data} className="w-full rounded mb-1" alt="Preview" />
                           ) : source.type === 'audio' ? (
