@@ -118,6 +118,7 @@ export const executeTool = async (name: string, args: any, settings: LLMSettings
 
 // Helper to map string types to Google GenAI Type enum
 const mapType = (typeStr: string): Type => {
+  if (!typeStr) return Type.STRING;
   switch (typeStr.toLowerCase()) {
     case 'string': return Type.STRING;
     case 'number': return Type.NUMBER;

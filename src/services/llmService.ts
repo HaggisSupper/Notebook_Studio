@@ -494,7 +494,7 @@ export const performDeepResearch = async (
           model: modelName,
           contents: { parts: [{ text: transcript }] },
           config: {
-            tools: getGeminiTools(),
+            tools: await getGeminiTools(settings),
             temperature: 0.2 // Lower temp for precise tool use
           }
         });
