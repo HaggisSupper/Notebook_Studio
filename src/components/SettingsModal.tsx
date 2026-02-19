@@ -8,6 +8,17 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
+/**
+ * Masks an API key to show only the last 4 characters
+ * Example: "sk-1234567890abcdef" -> "sk-...cdef"
+ */
+const maskApiKey = (key: string | undefined): string => {
+  if (!key || key.length < 8) return '';
+  const prefix = key.substring(0, Math.min(3, key.indexOf('-') + 1));
+  const suffix = key.substring(key.length - 4);
+  return `${prefix}...${suffix}`;
+};
+
 const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose }) => {
   const [localSettings, setLocalSettings] = useState<LLMSettings>(settings);
 
@@ -59,6 +70,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose
                       placeholder={localSettings.provider === 'google' ? "AIza..." : "sk-..."}
                       className="w-full bg-neutral-700 border-2 border-neutral-500 rounded-xl p-3 text-xs text-white transition-all hover:border-orange-500 focus:border-orange-500 outline-none"
                    />
+                   {localSettings.apiKey && (
+                     <p className="text-[9px] text-neutral-500 mt-1">
+                       Current: {maskApiKey(localSettings.apiKey)}
+                     </p>
+                   )}
                 </div>
             </div>
 
@@ -100,6 +116,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose
                            placeholder="tvly-..."
                            className="w-full bg-neutral-700 border-2 border-neutral-500 rounded-lg p-2 text-xs text-white outline-none"
                         />
+                        {localSettings.searchConfig.apiKey && (
+                          <p className="text-[9px] text-neutral-500 mt-1">
+                            Current: {maskApiKey(localSettings.searchConfig.apiKey)}
+                          </p>
+                        )}
                      </div>
                 </div>
             </div>

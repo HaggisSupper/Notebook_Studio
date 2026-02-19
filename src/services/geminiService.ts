@@ -2,13 +2,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Source, ReportData, InfographicData, MindmapNode } from "../types";
 
-const API_KEY = process.env.API_KEY || '';
-
 export const generateStudioContent = async (
   sources: Source[],
-  type: 'report' | 'infographic' | 'mindmap'
+  type: 'report' | 'infographic' | 'mindmap',
+  apiKey: string
 ): Promise<any> => {
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   const context = sources.map(s => `SOURCE: ${s.title}\nCONTENT: ${s.content}`).join('\n\n---\n\n');
 
   const prompts = {
