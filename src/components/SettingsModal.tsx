@@ -13,7 +13,7 @@ interface SettingsModalProps {
  * Example: "sk-1234567890abcdef" -> "sk-...cdef"
  */
 const maskApiKey = (key: string | undefined): string => {
-  if (!key || key.length < 8) return '';
+  if (!key || key.length < 4) return '';
   const prefix = key.substring(0, Math.min(3, key.indexOf('-') + 1));
   const suffix = key.substring(key.length - 4);
   return `${prefix}...${suffix}`;

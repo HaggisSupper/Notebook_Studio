@@ -3,6 +3,8 @@ import CryptoJS from 'crypto-js';
 
 // Simple encryption key - In production, this could be more sophisticated
 // or use Web Crypto API. For a client-side only app, this provides basic obfuscation.
+// NOTE: This is NOT true security - anyone with browser dev tools can access localStorage.
+// The encryption primarily protects against casual observation and accidental exposure.
 const ENCRYPTION_KEY = 'notebook-studio-secure-key-2024';
 
 /**
@@ -13,7 +15,7 @@ function encryptData(data: string): string {
     return CryptoJS.AES.encrypt(data, ENCRYPTION_KEY).toString();
   } catch (error) {
     console.error('Encryption failed:', error);
-    return data;
+    throw new Error('Failed to encrypt sensitive data');
   }
 }
 
@@ -23,10 +25,14 @@ function encryptData(data: string): string {
 function decryptData(encryptedData: string): string {
   try {
     const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
-    return bytes.toString(CryptoJS.enc.Utf8);
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    if (!decrypted) {
+      throw new Error('Decryption resulted in empty string');
+    }
+    return decrypted;
   } catch (error) {
     console.error('Decryption failed:', error);
-    return encryptedData;
+    throw new Error('Failed to decrypt data - data may be corrupted');
   }
 }
 
