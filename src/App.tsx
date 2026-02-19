@@ -570,8 +570,11 @@ const App: React.FC = () => {
   };
 
   const applyServiceWorkerUpdate = () => {
-    if (swUpdateRegistration?.waiting) {
+    if (swUpdateRegistration?.waiting && 'serviceWorker' in navigator) {
+      const handleControllerChange = () => window.location.reload();
+      navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange, { once: true });
       swUpdateRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      return;
     }
     window.location.reload();
   };
