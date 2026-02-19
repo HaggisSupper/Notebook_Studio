@@ -12,6 +12,7 @@ import SettingsModal from './components/SettingsModal';
 import Canvas from './components/Canvas';
 import { generateStudioContent, performDeepResearch } from './services/llmService';
 import * as sqlService from './services/sqlService';
+import { useLocalStorage } from './utils/useLocalStorage';
 
 const INITIAL_PAGE: Page = {
   id: 'pg-1',
@@ -30,14 +31,10 @@ const INITIAL_NOTEBOOK: Notebook = {
 };
 
 const App: React.FC = () => {
-  const [state, setState] = useState<StudioState>({
-    notebooks: [INITIAL_NOTEBOOK],
-    activeNotebookId: 'nb-1',
-    activePageId: 'pg-1',
-    activeView: 'chat',
-    isLoading: false,
-    isDarkMode: true,
-    settings: {
+  // Persist settings to localStorage with encryption for sensitive data
+  const [settings, setSettings] = useLocalStorage<LLMSettings>(
+    'notebook-studio-settings',
+    {
       provider: 'google',
       model: 'gemini-2.0-flash-exp',
       searchConfig: {
@@ -45,6 +42,17 @@ const App: React.FC = () => {
         apiKey: ''
       }
     },
+    true // Encrypt settings (contains API keys)
+  );
+
+  const [state, setState] = useState<StudioState>({
+    notebooks: [INITIAL_NOTEBOOK],
+    activeNotebookId: 'nb-1',
+    activePageId: 'pg-1',
+    activeView: 'chat',
+    isLoading: false,
+    isDarkMode: true,
+    settings,
     sqlConfig: {
       active: false,
       schemaContext: ''
@@ -83,6 +91,11 @@ const App: React.FC = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activePage?.chatHistory]);
+
+  // Sync settings from localStorage to state
+  useEffect(() => {
+    setState(prev => ({ ...prev, settings }));
+  }, [settings]);
 
   // --- Source History Helpers ---
   const pushSourceHistory = () => {
@@ -842,7 +855,11 @@ const App: React.FC = () => {
         {isSettingsOpen && (
           <SettingsModal 
             settings={state.settings} 
-            onSave={(newSettings) => { setState(prev => ({ ...prev, settings: newSettings })); setIsSettingsOpen(false); }} 
+            onSave={(newSettings) => { 
+              setSettings(newSettings); // Save to localStorage with encryption
+              setState(prev => ({ ...prev, settings: newSettings })); 
+              setIsSettingsOpen(false); 
+            }} 
             onClose={() => setIsSettingsOpen(false)} 
           />
         )}
