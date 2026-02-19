@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { registerServiceWorker, SW_UPDATE_EVENT } from './services/serviceWorker';
 
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
   constructor(props: any) {
@@ -43,3 +44,7 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+registerServiceWorker((registration) => {
+  window.dispatchEvent(new CustomEvent(SW_UPDATE_EVENT, { detail: registration }));
+});

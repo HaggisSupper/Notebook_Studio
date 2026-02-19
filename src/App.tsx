@@ -13,6 +13,7 @@ import Canvas from './components/Canvas';
 import { generateStudioContent, performDeepResearch } from './services/llmService';
 import * as sqlService from './services/sqlService';
 import { useLocalStorage } from './utils/useLocalStorage';
+import { SW_UPDATE_EVENT } from './services/serviceWorker';
 
 const INITIAL_PAGE: Page = {
   id: 'pg-1',
@@ -62,6 +63,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
   const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
+  const [swUpdateRegistration, setSwUpdateRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [focusArea, setFocusArea] = useState('');
   const [complexityLevel, setComplexityLevel] = useState('');
@@ -91,6 +93,16 @@ const App: React.FC = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activePage?.chatHistory]);
+
+  useEffect(() => {
+    const handleSwUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<ServiceWorkerRegistration>;
+      setSwUpdateRegistration(customEvent.detail);
+    };
+
+    window.addEventListener(SW_UPDATE_EVENT, handleSwUpdate);
+    return () => window.removeEventListener(SW_UPDATE_EVENT, handleSwUpdate);
+  }, []);
 
   // --- Source History Helpers ---
   const pushSourceHistory = () => {
@@ -557,6 +569,13 @@ const App: React.FC = () => {
     setFocusArea('');
   };
 
+  const applyServiceWorkerUpdate = () => {
+    if (swUpdateRegistration?.waiting) {
+      swUpdateRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    window.location.reload();
+  };
+
   const handleConnectSql = () => {
       if (!sqlSchema.trim()) {
         alert("Please provide schema context before establishing bridge.");
@@ -720,6 +739,18 @@ const App: React.FC = () => {
               <button onClick={() => setIsSettingsOpen(true)} className="p-1.5 text-neutral-300 hover:text-white hover:bg-neutral-600 rounded transition-all border-2 border-transparent hover:border-orange-500">⚙</button>
             </div>
           </header>
+
+          {swUpdateRegistration && (
+            <div className="px-4 py-2 border-b border-orange-500/40 bg-neutral-600 flex items-center justify-between gap-3">
+              <span className="text-[10px] font-black uppercase tracking-widest text-orange-300">Update Available</span>
+              <button
+                onClick={applyServiceWorkerUpdate}
+                className="px-3 py-1 text-[9px] font-black uppercase tracking-widest border border-orange-500 text-orange-200 hover:bg-orange-500 hover:text-white transition-all rounded"
+              >
+                Reload
+              </button>
+            </div>
+          )}
 
           {/* Canvas */}
           <div className="flex-1 overflow-y-auto bg-neutral-700 p-10 custom-scrollbar relative">
