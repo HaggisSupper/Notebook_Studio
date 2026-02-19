@@ -92,11 +92,6 @@ const App: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activePage?.chatHistory]);
 
-  // Sync settings from localStorage to state
-  useEffect(() => {
-    setState(prev => ({ ...prev, settings }));
-  }, [settings]);
-
   // --- Source History Helpers ---
   const pushSourceHistory = () => {
     setSourceHistory(prev => ({
