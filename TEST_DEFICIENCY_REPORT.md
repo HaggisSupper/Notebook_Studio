@@ -348,10 +348,10 @@ The `IMPLEMENTATION_SUMMARY.md` claims these are "COMPLETE":
 
 ---
 
-### Phase 3: Medium Priority (3-5 Days)
+### Phase 3: Maturation & Code Hardening (3-5 Days)
 **Priority: IMPORTANT**
 
-#### 3.1 Build Comprehensive Integration Tests (1-2 days)
+#### 3.1 Regression and Integration Hardening (1-2 days)
 **Framework:** Vitest + Testing Library
 
 **Test Suites:**
@@ -377,33 +377,23 @@ describe('Notebook Management', () => {
 
 ---
 
-#### 3.2 SQL Connector Implementation (6-10 hours)
-**Scope:** Client-side SQLite using `sql.js`
+#### 3.2 Runtime Safety and Defensive Validation (6-10 hours)
+**Scope:** Harden high-risk paths (LLM calls, parsing, SQL bridge, persistence)
 
 **Tasks:**
-- [ ] Install `sql.js`:
-  ```bash
-  npm install sql.js
-  ```
-- [ ] Create SQL service:
-  ```tsx
-  const executeSqlQuery = async (query: string, db: Database) => {
-    const results = db.exec(query);
-    logTransform('QUERY_EXECUTION', ...);
-    return results;
-  };
-  ```
-- [ ] Implement schema introspection
-- [ ] Build table  generation from query results
-- [ ] Enhance transform logging
+- [ ] Add input validation and sanitization for URL/source imports before processing
+- [ ] Add shared guardrails for LLM provider settings (missing key/model/base URL)
+- [ ] Add error boundaries/fallback UI for critical generation and parsing failures
+- [ ] Ensure SQL transform logging captures failed operations and recovery attempts
+- [ ] Add targeted unit tests for failure and edge-case paths (invalid files, malformed JSON, bad SQL)
 
-**Note:** For real database connections (PostgreSQL, MySQL), requires server-side proxy
+**Note:** Keep hardening changes incremental and backwards compatible; avoid broad refactors.
 
 **Acceptance Criteria:**
-- ✅ Can execute SQL queries on client-side SQLite
-- ✅ Results displayed in table view
-- ✅ Transform log captures operations
-- ✅ JSON export works
+- ✅ Core workflows fail gracefully without app crashes
+- ✅ Invalid inputs are rejected with actionable user-facing errors
+- ✅ Regression tests cover critical failure scenarios
+- ✅ Build and unit tests pass with hardening changes
 
 ---
 
@@ -549,4 +539,3 @@ class ErrorBoundary extends React.Component {
 
 **Report Generated:** 2025-12-24 20:50  
 **Next Review:** After Phase 1 completion
-
