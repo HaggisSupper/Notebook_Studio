@@ -387,7 +387,7 @@ describe('Notebook Management', () => {
 - [ ] Ensure SQL transform logging captures failed operations and recovery attempts
 - [ ] Add targeted unit tests for failure and edge-case paths (invalid files, malformed JSON, bad SQL)
 
-**Note:** Keep hardening changes incremental and backwards compatible; avoid broad refactors.
+**Note:** Keep hardening changes incremental and backward compatible; avoid broad refactors.
 
 **Acceptance Criteria:**
 - ✅ Core workflows fail gracefully without app crashes
