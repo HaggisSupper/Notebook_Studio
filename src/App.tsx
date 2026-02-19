@@ -13,6 +13,7 @@ import Canvas from './components/Canvas';
 import { generateStudioContent, performDeepResearch } from './services/llmService';
 import * as sqlService from './services/sqlService';
 import { useLocalStorage } from './utils/useLocalStorage';
+import { useNotebookPersistence, loadPersistedNotebooks } from './utils/useNotebookPersistence';
 import { SW_UPDATE_EVENT } from './services/serviceWorker';
 
 const INITIAL_PAGE: Page = {
@@ -46,18 +47,23 @@ const App: React.FC = () => {
     true // Encrypt settings (contains API keys)
   );
 
-  const [state, setState] = useState<StudioState>({
-    notebooks: [INITIAL_NOTEBOOK],
-    activeNotebookId: 'nb-1',
-    activePageId: 'pg-1',
-    activeView: 'chat',
-    isLoading: false,
-    isDarkMode: true,
-    settings,
-    sqlConfig: {
-      active: false,
-      schemaContext: ''
-    }
+  const [state, setState] = useState<StudioState>(() => {
+    const persistedNotebooks = loadPersistedNotebooks();
+    const notebooks = persistedNotebooks ?? [INITIAL_NOTEBOOK];
+    const firstNotebook = notebooks[0];
+    return {
+      notebooks,
+      activeNotebookId: firstNotebook.id,
+      activePageId: firstNotebook.pages[0].id,
+      activeView: 'chat',
+      isLoading: false,
+      isDarkMode: true,
+      settings,
+      sqlConfig: {
+        active: false,
+        schemaContext: ''
+      }
+    };
   });
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -75,6 +81,9 @@ const App: React.FC = () => {
   
   // UX State
   const [userClickedGenerate, setUserClickedGenerate] = useState(false);
+
+  // Notebook auto-save persistence
+  const { lastSaved } = useNotebookPersistence(state.notebooks);
 
   // Source History State for Undo/Redo
   const [sourceHistory, setSourceHistory] = useState<{past: Notebook[][], future: Notebook[][]}>({ past: [], future: [] });
@@ -695,6 +704,11 @@ const App: React.FC = () => {
               </div>
               <div className="h-4 w-[1px] bg-neutral-500 mx-1" />
               <div className="text-[10px] text-neutral-400 font-mono italic">CLUSTER: {activeNotebook?.sources.length || 0} SIGNALS</div>
+              {lastSaved && (
+                <div className="text-[9px] text-neutral-600 font-mono" title={new Date(lastSaved).toLocaleString()}>
+                  SAVED {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-1">

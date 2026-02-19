@@ -95,6 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
+  const jsonInputRef = useRef<HTMLInputElement>(null);
   const activeNotebook = notebooks.find(n => n.id === activeNotebookId);
 
   const toggleSection = (section: 'explorer' | 'sources') => {
@@ -290,6 +291,58 @@ const Sidebar: React.FC<SidebarProps> = ({
       setProcessStatus('');
       if(zipInputRef.current) zipInputRef.current.value = '';
     }
+  };
+
+  // --- JSON Export/Import ---
+  const handleExportNotebookJson = (notebookId: string) => {
+    const nb = notebooks.find(n => n.id === notebookId);
+    if (!nb) return;
+    const blob = new Blob([JSON.stringify(nb, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, `${nb.name.replace(/[^a-z0-9]/gi, '_')}.json`);
+  };
+
+  const handleExportAllNotebooks = () => {
+    const blob = new Blob([JSON.stringify(notebooks, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, `all-notebooks-${Date.now()}.json`);
+  };
+
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        const toImport: Notebook[] = Array.isArray(parsed) ? parsed : [parsed];
+        if (toImport.length === 0) {
+          alert('Invalid notebook JSON: file contains no notebooks.');
+          return;
+        }
+        const invalid = toImport.find(nb => !nb.name || !Array.isArray(nb.pages));
+        if (invalid) {
+          alert('Invalid notebook JSON: each notebook must have a name and a pages array.');
+          return;
+        }
+        toImport.forEach(nb => {
+          const sanitized: Notebook = {
+            id: nb.id ?? Math.random().toString(36).substr(2, 9),
+            name: nb.name,
+            sources: Array.isArray(nb.sources) ? nb.sources : [],
+            pages: nb.pages.length > 0
+              ? nb.pages
+              : [{ id: 'pg-import', name: 'Page 1', chatHistory: [], generatedContent: {} }],
+          };
+          onImportNotebook(sanitized);
+        });
+        alert(`Successfully imported ${toImport.length} notebook(s).`);
+      } catch (err: any) {
+        console.error('JSON import failed:', err);
+        alert(`Failed to import notebook JSON: ${err.message || 'Please ensure the file contains valid notebook data with required fields (name, pages).'}`);
+      } finally {
+        if (jsonInputRef.current) jsonInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
   };
 
   // --- Source Handlers ---
@@ -598,6 +651,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                   </button>
                   <input type="file" ref={zipInputRef} hidden accept=".zip" onChange={handleImportZip} />
+                  <button onClick={() => jsonInputRef.current?.click()} className="text-neutral-500 hover:text-white transition-colors" title="Import Notebook (JSON)">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  </button>
+                  <input type="file" ref={jsonInputRef} hidden accept=".json" onChange={handleImportJson} />
+                  <button onClick={handleExportAllNotebooks} className="text-neutral-500 hover:text-white transition-colors" title="Export All Notebooks (JSON)">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  </button>
                   <button onClick={onCreateNotebook} className="text-neutral-500 hover:text-white transition-colors" title="New Notebook">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                   </button>
@@ -642,8 +702,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <button onClick={(e) => { e.stopPropagation(); startEditing(nb.id, nb.name); }} className="text-neutral-500 hover:text-white" title="Rename">
                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleExportNotebook(nb.id); }} className="text-neutral-500 hover:text-white" title="Export">
+                            <button onClick={(e) => { e.stopPropagation(); handleExportNotebook(nb.id); }} className="text-neutral-500 hover:text-white" title="Export (Zip)">
                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleExportNotebookJson(nb.id); }} className="text-neutral-500 hover:text-white" title="Export (JSON)">
+                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); onCreatePage(nb.id); }} className="text-neutral-500 hover:text-white" title="Add Page">
                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
